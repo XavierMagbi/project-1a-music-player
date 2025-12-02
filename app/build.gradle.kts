@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.epfl.esl.musicplayer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.epfl.esl.musicplayer"
