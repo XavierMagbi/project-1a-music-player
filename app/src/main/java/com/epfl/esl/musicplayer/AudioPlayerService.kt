@@ -2,49 +2,79 @@ package com.epfl.esl.musicplayer
 
 import android.content.Context
 import android.media.MediaPlayer
-import androidx.annotation.RawRes
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LiveData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
-class AudioPlayerService(
+class AudioPlayerService (
     private val context: Context
-) {
+){
     private var mediaPlayer: MediaPlayer? = null
+    private var updateJob: Job? = null
 
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying = _isPlaying.asStateFlow()
+    private val _isPlaying = MutableLiveData<Boolean?>()
+    val isPlaying: LiveData<Boolean?>
+        get() = _isPlaying
 
-    fun play(@RawRes audioResId: Int) {
-        // Libérer les ressources si une autre musique jouait
-        releasePlayer()
+    private val _currentPosition = MutableLiveData<Int>(0)
+    val currentPosition: LiveData<Int>
+        get() = _currentPosition
 
-        mediaPlayer = MediaPlayer.create(context, audioResId).apply {
-            setOnCompletionListener {
-                // Mettre à jour l'état quand la musique est terminée
-                _isPlaying.value = false
-            }
-        }
+    private val _duration = MutableLiveData<Int>(0)
+    val duration: LiveData<Int>
+        get() = _duration
+
+    fun play(musicResId: Int){
+        mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
         mediaPlayer?.start()
         _isPlaying.value = true
+        startUpdatingProgress()
+
+        _duration.value = mediaPlayer?.duration ?: 0
     }
 
-    fun pause() {
+    fun pause(){
         mediaPlayer?.pause()
         _isPlaying.value = false
+        stopUpdatingProgress()
     }
 
-    fun resume() {
-        // Ne reprendre la lecture que si le lecteur existe
-        if (mediaPlayer != null) {
-            mediaPlayer?.start()
-            _isPlaying.value = true
+    fun resume(){
+        mediaPlayer?.start()
+        _isPlaying.value = true
+        startUpdatingProgress()
+    }
+
+    fun rewind(){
+        mediaPlayer?.seekTo(0)
+        _currentPosition.postValue(0)
+    }
+
+    fun seekTo(position: Int){
+        mediaPlayer?.seekTo(position)
+        _currentPosition.postValue(position)
+    }
+
+    private fun startUpdatingProgress() {
+        updateJob?.cancel()
+        updateJob = CoroutineScope(Dispatchers.Main).launch {
+            while (isActive) {
+                mediaPlayer?.let {
+                    if (it.isPlaying) {
+                        _currentPosition.postValue(it.currentPosition)
+                    }
+                }
+                delay(500)
+            }
         }
     }
 
-    // Fonction cruciale pour libérer les ressources système
-    fun releasePlayer() {
-        mediaPlayer?.release()
-        mediaPlayer = null
-        _isPlaying.value = false
+    private fun stopUpdatingProgress() {
+        updateJob?.cancel()
     }
 }
