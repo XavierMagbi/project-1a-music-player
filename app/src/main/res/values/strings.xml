@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
+    <string name="default_user_image">user_image\n</string>
+    <string name="username_hint">username</string>
+    <string name="email_hint">email</string>
+    <string name="password_hint">password</string>
+    <string name="confirm_button_text">CONFIRM</string>
+    <string name="pick_image_button_text">PICK IMAGE</string>
+    <string name="password_hidden_text">••••••••</string>
+    <string name="update_button_text">UPDATE</string>
+    <string name="log_out_button_text">LOG OUT</string>
+    <string name="picked_user_image">Selected image</string>
+    <string name="enter_button_text">ENTER</string>
+    <string name="user_image_content_description">User image</string>
+    <string name="selected_activity_content_description">selected sport</string>
+    <string name="running_activity_content_description">running</string>
+    <string name="cycling_activity_content_description">cycling</string>
+    <string name="skiing_activity_content_description">skiing</string>
+    <string name="climbing_activity_content_description">climbing</string>
+    <string name="my_history_navigation_label">My History</string>
+    <string name="my_history_content_description">MyHistory icon</string>
+    <string name="new_recording_content_description">NewRecording icon</string>
+    <string name="new_recording_navigation_label">New Recording</string>
+    <string name="exercise_live_content_description">ExerciseLive icon</string>
+    <string name="exercise_live_navigation_label">Exercise Live</string>
+    <string name="esl_logo_content_description">ESL logo</string>
+    <string name="about_text">This app is provided for the Android course!</string>
+    <string name="esl_icon_content_description">ESL icon</string>
+    <string name="about_navigation_drawer_item_text">About</string>
+    <string name="menu_icon_content_description">Menu icon</string>
+    <string name="heart_rate">Heart Rate</string>
 </resources>
