@@ -17,6 +17,13 @@ import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.PutDataRequest
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
+
 import java.io.ByteArrayOutputStream
 
 class LoginProfileViewModel : ViewModel(){
@@ -24,6 +31,19 @@ class LoginProfileViewModel : ViewModel(){
     private var _username = MutableLiveData<String>("")
     private var _password = MutableLiveData<String>("")
     private var _imageUri = MutableLiveData<Uri?>(null)
+
+    var storageRef = FirebaseStorage.getInstance().getReference()
+
+    private val _uploadSuccess = MutableLiveData<Boolean?>()
+    val uploadSuccess: LiveData<Boolean?>
+        get() = _uploadSuccess
+    private val _profilePresent = MutableLiveData<Boolean?>()
+    val profilePresent: LiveData<Boolean?>
+        get() = _profilePresent
+
+    val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    val profileRef: DatabaseReference = database.getReference("Profiles")
+    var key: String= ""
 
     val username: LiveData<String>
         get() = _username
@@ -42,9 +62,22 @@ class LoginProfileViewModel : ViewModel(){
         _imageUri.postValue(imageUri)
     }
 
+    fun sendDataToFireBase(context: Context?) {
+        key = profileRef.push().key.toString()
+        profileRef.child(key).child("username").setValue(_username.value)
+        profileRef.child(key).child("password").setValue(_password.value)
+    }
+
 
     fun sendDataToWear(context: Context?, dataClient: DataClient) {
+
+        val matrix = Matrix()
+
+        val profileImageRef = storageRef.child("ProfileImages/" + username.value+ ".jpg")
+
+
         //1
+
         var imageBitmap = MediaStore.Images.Media.getBitmap(
             context?.contentResolver,
             _imageUri.value
@@ -60,8 +93,7 @@ class LoginProfileViewModel : ViewModel(){
             false
         )
 
-        //3
-        val matrix = Matrix()
+
 
         imageBitmap = Bitmap.createBitmap(
             imageBitmapScaled, 0, 0,
@@ -79,6 +111,20 @@ class LoginProfileViewModel : ViewModel(){
             dataMap.putString("username", _username.value ?: "")
             asPutDataRequest()
         }
+
+        val uploadProfileImage = profileImageRef.putBytes(imageByteArray)
+
+        uploadProfileImage.addOnFailureListener {
+            _uploadSuccess.value = false
+        }.addOnSuccessListener { taskSnapshot ->
+            profileRef.child(key).child("photo URL").setValue(
+                (FirebaseStorage.getInstance()
+                    .getReference()).toString() + "ProfileImages/" + username.value
+                        + ".jpg")
+            _uploadSuccess.value = true
+        }
+
+
 
         request.setUrgent()
         val putTask: Task<DataItem> = dataClient.putDataItem(request)

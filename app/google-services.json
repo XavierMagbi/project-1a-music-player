@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "446634756674",
+    "project_id": "muzikproject1a",
+    "storage_bucket": "muzikproject1a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446634756674:android:55ea625f29b005e5b5fbdb",
+        "android_client_info": {
+          "package_name": "com.epfl.esl.musicplayer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyv6wgRRW7mGGc3FIkbpEbj6QzcepxkzA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

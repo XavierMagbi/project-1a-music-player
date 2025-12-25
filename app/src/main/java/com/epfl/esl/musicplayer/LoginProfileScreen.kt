@@ -3,11 +3,12 @@ package com.epfl.esl.musicplayer
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,15 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,24 +43,19 @@ import com.google.android.gms.wearable.DataClient
 
 @Composable
 fun LoginProfileScreen(
-    onEnterButtonClicked: ((LoginInfo) -> Unit),
+    onNavigateToNewRecording: ((LoginInfo) -> Unit),
     dataClient: DataClient,
     modifier: Modifier = Modifier,
     loginProfileViewModel: LoginProfileViewModel = viewModel()
 ) {
-
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        val context = LocalContext.current
-
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
         val username by loginProfileViewModel.username.observeAsState(initial = "")
         val password by loginProfileViewModel.password.observeAsState(initial = "")
         val imageUri by loginProfileViewModel.imageUri.observeAsState(initial = null)
-
-
-        var isEditingMode by remember { mutableStateOf(true) }
-
-
-        var resultLauncher = rememberLauncherForActivityResult(
+        val resultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
             onResult = { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
@@ -71,67 +65,76 @@ fun LoginProfileScreen(
             }
         )
 
-        if (isEditingMode) {
-            LoginProfileContentEditing(
-                username = username,
-                password = password,
-                onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) },
-                onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
-                onContinueButtonClicked = { isEditingMode = false },
-                onPickImageButtonClicked = {
-                    val intent = Intent(Intent.ACTION_GET_CONTENT)
-                    intent.type = "image/*"
-                    resultLauncher.launch(intent)
-                },
-                imageUri,
-                modifier
-            )
-        } else {
-            LoginProfileContentDisplaying(
-                username = username,
-                onUpdateButtonClicked = {
-                    isEditingMode = true
-                },
-                onLogOutButtonClicked = {
-                    loginProfileViewModel.updateUsername("")
-                    loginProfileViewModel.updatePassword("")
-                    loginProfileViewModel.updateImageUri(null)
-                    isEditingMode = true
-                },
-                onEnterButtonClicked = { loginInfo ->
-                    loginProfileViewModel
-                        .sendDataToWear(context.applicationContext, dataClient)
-                    onEnterButtonClicked(loginInfo)
-                },
-                imageUri,
-                modifier
-            )
+        val context = LocalContext.current
+
+        LoginProfileContent(
+            imageUri = imageUri,
+            username = username,
+            password = password,
+            onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) },
+            onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
+            onSignInButtonClicked = {
+
+
+            },
+            onSignUpButtonClicked = {
+                loginProfileViewModel.sendDataToWear(context, dataClient)
+                loginProfileViewModel.sendDataToFireBase(context)
+
+                val userData = LoginInfo(
+                    loginProfileViewModel.username.value ?: "",
+                    loginProfileViewModel.imageUri.value
+                )
+                onNavigateToNewRecording(userData)
+            },
+            onPickImageButtonClicked = {
+                val intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.type = "image/*"
+                resultLauncher.launch(intent)
+            },
+            modifier
+        )
+
+        val uploadSuccess by loginProfileViewModel.uploadSuccess
+            .observeAsState(initial = true)
+        if (uploadSuccess == false) {
+            Toast.makeText(
+                context,
+                "Profile image upload to firebase failed.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 }
 
 @Composable
-fun LoginProfileContentEditing(
+fun LoginProfileContent(
+    imageUri: Uri?,
     username: String,
     password: String,
     onUsernameChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
-    onContinueButtonClicked: () -> Unit,
+    onSignInButtonClicked: () -> Unit,
+    onSignUpButtonClicked: () -> Unit,
     onPickImageButtonClicked: () -> Unit,
-    imageUri: Uri? = Uri.EMPTY,
     modifier: Modifier = Modifier
-){
+) {
+    val context = LocalContext.current
+
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (imageUri == null) {
             Image(
-                painter = painterResource(id = R.drawable.user_image),
+                painter = painterResource(id = R.drawable.pick_image),
                 contentDescription = stringResource(R.string.default_user_image),
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(200.dp)
+                    .clickable {
+                        onPickImageButtonClicked()
+                    }
             )
         } else {
             AsyncImage(
@@ -139,7 +142,10 @@ fun LoginProfileContentEditing(
                 contentDescription = stringResource(R.string.picked_user_image),
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(400.dp)
+                    .clickable {
+                        onPickImageButtonClicked()
+                    }
             )
         }
         TextField(
@@ -149,6 +155,7 @@ fun LoginProfileContentEditing(
                 Text(stringResource(R.string.username_hint))
             },
             textStyle = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center),
+            singleLine = true,
             modifier = modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
@@ -156,110 +163,53 @@ fun LoginProfileContentEditing(
         TextField(
             value = password,
             onValueChange = onPasswordChanged,
-            textStyle = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center),
             label = {
                 Text(stringResource(R.string.password_hint))
             },
+            textStyle = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center),
+            singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = modifier.fillMaxWidth()
         )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
-        ) {
-            Button(
-                onClick = onContinueButtonClicked,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.confirm_button_text))
-            }
-            Button(
-                onClick = onPickImageButtonClicked,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.pick_image_button_text))
-            }
-        }
-    }
-}
-
-
-
-@Composable
-fun LoginProfileContentDisplaying(
-    username: String,
-    onUpdateButtonClicked: () -> Unit,
-    onLogOutButtonClicked: () -> Unit,
-    onEnterButtonClicked: (LoginInfo) -> Unit,
-    imageUri: Uri? = Uri.EMPTY,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (imageUri == null) {
-            Image(
-                painter = painterResource(id = R.drawable.user_image),
-                contentDescription = stringResource(R.string.default_user_image),
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-            )
-        } else {
-            AsyncImage(
-                model = imageUri,
-                contentDescription = stringResource(R.string.picked_user_image),
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-            )
-        }
-        Text(
-            text = username,
-            style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center),
-            maxLines = 1,
+        Button(
+            onClick = {
+                if (username.isBlank()) {
+                    Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
+                } else if (password.isBlank()) {
+                    Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
+                } else {
+                    onSignInButtonClicked()
+                }
+            },
             modifier = modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-        Text(
-            text = stringResource(R.string.password_hidden_text),
-            style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center),
-            maxLines = 1,
-            modifier = modifier.fillMaxWidth()
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
+                .padding(top = 8.dp)
         ) {
-            Button(
-                onClick = onUpdateButtonClicked,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.update_button_text))
-            }
-            Button(
-                onClick = onLogOutButtonClicked,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.log_out_button_text))
-            }
-            Button(
-                onClick = {
-                    val loginInfo = LoginInfo(username, imageUri)
-                    onEnterButtonClicked(loginInfo)
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.enter_button_text))
-            }
+            Text(text = stringResource(R.string.sign_in_button_text))
+        }
+        OutlinedButton(
+            onClick = {
+                if (username.isBlank()) {
+                    Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
+                } else if (password.isBlank()) {
+                    Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
+                } else if (imageUri == null) {
+                    Toast.makeText(context, "Pick an image", Toast.LENGTH_SHORT).show()
+                } else {
+                    onSignUpButtonClicked()
+                }
+            },
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text(text = stringResource(R.string.sign_up_button_text))
         }
     }
 }
+
+
 
 
 @Preview
@@ -268,21 +218,14 @@ fun LoginProfileScreenPreview() {
     MusicPlayerTheme {
         val context = LocalContext.current
         val dataClient = Wearable.getDataClient(context)
-        LoginProfileScreen({}, dataClient)
+        LoginProfileScreen({}, dataClient )
     }
 }
 
 @Preview
 @Composable
-fun LoginProfileDisplayingPreview() {
+fun LoginProfileContentPreview() {
     MusicPlayerTheme {
-        LoginProfileContentDisplaying("username", {}, {}, {})
-    }
-}
-@Preview
-@Composable
-fun LoginProfileSEditingPreview() {
-    MusicPlayerTheme {
-        LoginProfileContentEditing("", "", {}, {}, {}, {})
+        LoginProfileContent(null, "", "", {}, {}, {}, {}, {})
     }
 }

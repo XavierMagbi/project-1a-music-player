@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
+    <string name="about_navigation_drawer_item_text">About\n</string>
+    <string name="about_icon_description">about icon\n</string>
     <string name="default_user_image">user_image\n</string>
     <string name="username_hint">username</string>
     <string name="email_hint">email</string>
@@ -26,7 +28,15 @@
     <string name="esl_logo_content_description">ESL logo</string>
     <string name="about_text">This app is provided for the Android course!</string>
     <string name="esl_icon_content_description">ESL icon</string>
-    <string name="about_navigation_drawer_item_text">About</string>
     <string name="menu_icon_content_description">Menu icon</string>
-    <string name="heart_rate">Heart Rate</string>
+    <string name="sign_up_button_text">SIGN UP</string>
+    <string name="sign_in_button_text">SIGN IN</string>
+    <string name="home_content_description">Home screen</string>
+    <string name="home_navigation_label">Home</string>
+    <string name="player_content_description">Player screen</string>
+    <string name="player_navigation_label">Music\n</string>
+
+
 </resources>
+
+

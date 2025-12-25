@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -49,6 +50,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.firebase.database)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -56,8 +58,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.compose.runtime:runtime-livedata:1.5.4") // For viewmodel arch
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.compose.runtime:runtime-livedata:1.10.0") // For viewmodel arch
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("io.coil-kt:coil-compose:2.4.0")
@@ -67,4 +69,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0-rc02")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0-rc02")
     implementation("co.yml:ycharts:2.1.0")
+    implementation("com.google.firebase:firebase-storage-ktx")// Add this line for Firebase Cloud Storage
+    implementation("com.google.firebase:firebase-database-ktx")//  dependency for the Realtime Database since you use it
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Recommended: Manage
 }
