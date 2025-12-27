@@ -34,4 +34,5 @@
     <string name="about_text">This app is provided for the Android course!</string>
     <string name="esl_icon_content_description">ESL icon</string>
     <string name="heart_rate">Heart Rate</string>
+    <string name="my_playlist_text">My Playlists</string>
 </resources>

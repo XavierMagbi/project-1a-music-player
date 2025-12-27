@@ -16,7 +16,8 @@ import androidx.compose.ui.unit.sp
 
 data class PlaylistItem (
     val name: String? = "",
-    val author: String? = ""
+    val author: String? = "",
+    val id: String?=""
 )
 
 //playlistitem row composable
