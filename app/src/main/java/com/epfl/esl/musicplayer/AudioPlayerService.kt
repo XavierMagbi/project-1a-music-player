@@ -1,6 +1,7 @@
 package com.epfl.esl.musicplayer
 
 import android.content.Context
+import android.media.Image
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
@@ -12,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.invoke
 
 class AudioPlayerService (
     private val context: Context
@@ -35,26 +37,54 @@ class AudioPlayerService (
     val title: LiveData<String>
         get() = _title
 
+    private val _cover = MutableLiveData<ByteArray?>(null)
+    val cover: LiveData<ByteArray?>
+        get() = _cover
+
+    var onCompletionListener: (() -> Unit)? = null
+
     fun play(musicResId: Int){
+        // To stop playing the initial song when switching to another one
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                it.stop()
+            }
+            it.release()
+        }
+        mediaPlayer = null
+
         // To extract metadata through URI Android
         val retriever = MediaMetadataRetriever()
         try {
+            // Get URI
             val uri = Uri.parse("android.resource://${context.packageName}/$musicResId")
             retriever.setDataSource(context, uri)
+            // Get title
             val metaTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
             _title.value = metaTitle ?: "Unknown"
+            // Get cover image
+            val metaCover = retriever.embeddedPicture
+            _cover.value = metaCover
         } catch (e: Exception) {
             _title.value = "Error with metadata lecture"
+            _cover.value = null
         } finally {
             retriever.release()
         }
 
+        // To play the music
         mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
         mediaPlayer?.start()
         _isPlaying.value = true
         startUpdatingProgress()
-
         _duration.value = mediaPlayer?.duration ?: 0
+
+        // To handle end of music
+        mediaPlayer?.setOnCompletionListener {
+            _isPlaying.value = false
+            stopUpdatingProgress()
+            onCompletionListener?.invoke()
+        }
     }
 
     fun pause(){

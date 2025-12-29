@@ -1,5 +1,6 @@
 package com.epfl.esl.musicplayer
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -32,8 +33,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
-
-
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.text.style.TextAlign
 
 
 @Composable
@@ -46,7 +49,25 @@ fun PlayScreen(
     val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
     val duration by playScreenViewModel.duration.observeAsState(0)
     val title by playScreenViewModel.title.observeAsState(initial = "")
+    val coverImage by playScreenViewModel.coverImage.observeAsState()
 
+    // To convert ByteArray to Image
+    val painter = if (coverImage != null) {
+        val bitmap = remember(coverImage){
+            BitmapFactory.decodeByteArray(coverImage, 0, coverImage!!.size).asImageBitmap()
+        }
+        BitmapPainter(bitmap)
+    } else {
+        painterResource(id = R.drawable.ic_launcher_foreground) // Image par défaut
+    }
+
+    // To convert ms to readable time
+    fun formatTime(ms: Int): String {
+        val totalSeconds = ms / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return "%02d:%02d".format(minutes, seconds)
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -56,7 +77,7 @@ fun PlayScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ){
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                painter = painter,
                 contentDescription = "",
                 modifier = modifier
                     .fillMaxWidth()
@@ -64,7 +85,8 @@ fun PlayScreen(
             )
 
             Text(
-                text = title
+                text = title,
+                textAlign = TextAlign.Center
             )
             Slider(
                 value = currentPosition.toFloat(),
@@ -74,6 +96,26 @@ fun PlayScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
+            // Time display
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+                ) {
+                // Time passed
+                Text(
+                    text = formatTime(currentPosition),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                // Spacer to get times on edges
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+
+                // Temps left
+                Text(
+                    text = "-${formatTime(duration - currentPosition)}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ){
@@ -104,6 +146,9 @@ fun PlayScreen(
                     modifier = modifier
                         .size(100.dp)
                         .weight(1f)
+                        .clickable {
+                            playScreenViewModel.onRightArrowClick()
+                        }
                 )
             }
         }
