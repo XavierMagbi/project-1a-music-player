@@ -1,7 +1,9 @@
 package com.epfl.esl.musicplayer
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
+import android.net.Uri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +31,24 @@ class AudioPlayerService (
     val duration: LiveData<Int>
         get() = _duration
 
+    private val _title = MutableLiveData<String>("")
+    val title: LiveData<String>
+        get() = _title
+
     fun play(musicResId: Int){
+        // To extract metadata through URI Android
+        val retriever = MediaMetadataRetriever()
+        try {
+            val uri = Uri.parse("android.resource://${context.packageName}/$musicResId")
+            retriever.setDataSource(context, uri)
+            val metaTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            _title.value = metaTitle ?: "Unknown"
+        } catch (e: Exception) {
+            _title.value = "Error with metadata lecture"
+        } finally {
+            retriever.release()
+        }
+
         mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
         mediaPlayer?.start()
         _isPlaying.value = true

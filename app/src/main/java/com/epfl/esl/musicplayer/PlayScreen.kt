@@ -45,6 +45,7 @@ fun PlayScreen(
     val isPlaying by playScreenViewModel.isPlaying.observeAsState(initial = false)
     val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
     val duration by playScreenViewModel.duration.observeAsState(0)
+    val title by playScreenViewModel.title.observeAsState(initial = "")
 
 
     Surface(
@@ -63,7 +64,7 @@ fun PlayScreen(
             )
 
             Text(
-                text = "Music title"
+                text = title
             )
             Slider(
                 value = currentPosition.toFloat(),

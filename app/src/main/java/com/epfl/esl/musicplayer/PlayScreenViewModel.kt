@@ -14,7 +14,9 @@ class PlayScreenViewModel (
     val isPlaying: LiveData<Boolean?> = audioPlayer.isPlaying
     val currentPosition: LiveData<Int> = audioPlayer.currentPosition
     val duration: LiveData<Int> = audioPlayer.duration
+    val title: LiveData<String> = audioPlayer.title
     private var isPlayerInitialized = false
+    private val musicId = 0
 
     fun onPlayPauseClick(){
         if (isPlaying.value == true){
