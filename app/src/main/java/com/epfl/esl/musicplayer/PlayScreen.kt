@@ -19,31 +19,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOn
 import androidx.compose.material.icons.filled.RepeatOneOn
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.style.TextAlign
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayScreen(
     modifier: Modifier = Modifier,
@@ -57,6 +65,11 @@ fun PlayScreen(
     val coverImage by playScreenViewModel.coverImage.observeAsState()
     val shuffleOn by playScreenViewModel.shuffleOn.observeAsState(initial = false)
     val repeatMode by playScreenViewModel.repeatMode.observeAsState(0)
+    val playlist = playScreenViewModel.currentPlaylist
+
+    // Queue slider state
+    var showQueue by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     // To convert ByteArray to Image
     val painter = if (coverImage != null) {
@@ -87,20 +100,19 @@ fun PlayScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
+            // Music image
             Image(
                 painter = painter,
                 contentDescription = "",
                 modifier = modifier
-                    .fillMaxWidth()
-                    .height(400.dp)
+                    .size(400.dp)
             )
-
+            // Music title
             Text(
                 text = title,
                 textAlign = TextAlign.Center
             )
-
+            // Time slider
             Slider(
                 value = currentPosition.toFloat(),
                 onValueChange = { playScreenViewModel.onSeek(it) },
@@ -109,7 +121,6 @@ fun PlayScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
-
             // Time display
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -128,10 +139,11 @@ fun PlayScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-
+            // Arrow + Play/Pause buttons
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Left arrow
                 Icon(
                     imageVector = Icons.Filled.FastRewind,
                     contentDescription = "",
@@ -142,7 +154,7 @@ fun PlayScreen(
                             playScreenViewModel.onLeftArrowClick()
                         }
                 )
-
+                // Play/pause
                 Icon(
                     imageVector = if (isPlaying == true)
                         Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -154,7 +166,7 @@ fun PlayScreen(
                             playScreenViewModel.onPlayPauseClick()
                         }
                 )
-
+                // Right arrow
                 Icon(
                     imageVector = Icons.Filled.FastForward,
                     contentDescription = "",
@@ -166,11 +178,11 @@ fun PlayScreen(
                         }
                 )
             }
-
+            // Shuffle + Queue + Loop buttons
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
+                // Shuffle button
                 Icon(
                     imageVector = if (shuffleOn) Icons.Filled.ShuffleOn else Icons.Filled.Shuffle,
                     contentDescription = "",
@@ -181,11 +193,18 @@ fun PlayScreen(
                             playScreenViewModel.onShuffleClick()
                         }
                 )
-
-                androidx.compose.foundation.layout.Spacer(
-                    modifier = Modifier.weight(1f)
+                // Music queue button
+                Icon(
+                    imageVector = Icons.Filled.QueueMusic,
+                    contentDescription = "",
+                    modifier = modifier
+                        .size(50.dp)
+                        .weight(1f)
+                        .clickable {
+                            showQueue = true
+                        }
                 )
-
+                // Loop button
                 Icon(
                     imageVector = if (repeatMode == 0) Icons.Filled.Repeat else if (repeatMode == 1) Icons.Filled.RepeatOn else Icons.Filled.RepeatOneOn,
                     contentDescription = "",
@@ -196,6 +215,44 @@ fun PlayScreen(
                             playScreenViewModel.onRepeatClick()
                         }
                 )
+            }
+        }
+
+        // Queue sheet
+        if (showQueue){
+            ModalBottomSheet(
+                onDismissRequest = { showQueue = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    // Sheet title
+                    Text(
+                        text = "Music Queue",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    // Musics in queue
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(playlist.size) { index ->
+                            val resId = playlist[index]
+                            val trackName = playScreenViewModel.getTrackName(resId)
+                            // For each music image + title
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ){
+                                Text(
+                                    text = trackName
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

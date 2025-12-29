@@ -2,8 +2,12 @@ package com.epfl.esl.musicplayer
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import kotlin.text.get
 
@@ -26,13 +30,13 @@ class PlayScreenViewModel (
         R.raw.music1,
         R.raw.music2
     )
-    private var currentPlaylist = originalPlaylist
-    private var currentTrackIndex = 0
+    var currentPlaylist by mutableStateOf(originalPlaylist)
+    var currentTrackIndex by mutableStateOf(0)
 
-    private val _shuffleOn = androidx.lifecycle.MutableLiveData(false)
+    private val _shuffleOn = MutableLiveData(false)
     val shuffleOn: LiveData<Boolean> = _shuffleOn
 
-    private val _repeatMode = androidx.lifecycle.MutableLiveData(0)
+    private val _repeatMode = MutableLiveData(0)
     val repeatMode: LiveData<Int> = _repeatMode
 
     fun onPlayPauseClick(){
@@ -108,5 +112,9 @@ class PlayScreenViewModel (
             1 -> 2    // Go to one track repeat
             else -> 0 // No repeat
         }
+    }
+
+    fun getTrackName(resId: Int): String {
+        return getApplication<Application>().resources.getResourceEntryName(resId)
     }
 }
