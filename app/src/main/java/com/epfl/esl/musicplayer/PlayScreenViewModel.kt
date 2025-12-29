@@ -1,15 +1,15 @@
 package com.epfl.esl.musicplayer
 
 import android.app.Application
-import android.content.Context
+import android.media.MediaMetadataRetriever
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
-import kotlin.text.get
+
+data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
     application : Application
@@ -39,6 +39,7 @@ class PlayScreenViewModel (
     private val _repeatMode = MutableLiveData(0)
     val repeatMode: LiveData<Int> = _repeatMode
 
+    // Pause/Play button
     fun onPlayPauseClick(){
         if (isPlaying.value == true){
             audioPlayer.pause()
@@ -51,7 +52,7 @@ class PlayScreenViewModel (
             }
         }
     }
-
+    // Left arrow button
     fun onLeftArrowClick(){
         if (currentTrackIndex > 0 && currentPosition.value < 3000) {
             currentTrackIndex--
@@ -60,7 +61,7 @@ class PlayScreenViewModel (
             audioPlayer.rewind()
         }
     }
-
+    // Right arrow button
     fun onRightArrowClick() {
         if (_shuffleOn.value){
             currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.size
@@ -77,12 +78,12 @@ class PlayScreenViewModel (
             }
         }
     }
-
-    private fun playCurrentTrack() {
-        audioPlayer.play(currentPlaylist[currentTrackIndex])
+    // Play track at current index (called by Play/Pause/Side arrows)
+    fun playCurrentTrack(index: Int = currentTrackIndex) {
+        audioPlayer.play(currentPlaylist[index])
         isPlayerInitialized = true
     }
-
+    // To get timing for slider
     fun onSeek(newPosition: Float){
         audioPlayer.seekTo(newPosition.toInt())
     }
@@ -93,7 +94,7 @@ class PlayScreenViewModel (
             onRightArrowClick()
         }
     }
-
+    // Shuffle button
     fun onShuffleClick() {
         _shuffleOn.value = !(_shuffleOn.value ?: false)
 
@@ -105,7 +106,7 @@ class PlayScreenViewModel (
             currentPlaylist = originalPlaylist
         }
     }
-
+    // Repeat button
     fun onRepeatClick(){
         _repeatMode.value = when (_repeatMode.value) {
             0 -> 1    // Go to classic repeat of playlist
@@ -113,8 +114,28 @@ class PlayScreenViewModel (
             else -> 0 // No repeat
         }
     }
-
+    // In case metadata has no title
     fun getTrackName(resId: Int): String {
         return getApplication<Application>().resources.getResourceEntryName(resId)
+    }
+    // For sheet queue
+    fun getTrackMetadata(resId: Int): Metadata {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            // Get URI
+            val uri = android.net.Uri.parse("android.resource://${getApplication<Application>().packageName}/$resId")
+            retriever.setDataSource(getApplication(), uri)
+            // Extract title
+            val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                ?: getTrackName(resId) // If no title in metadata => return file name
+            // Extract image
+            val cover = retriever.embeddedPicture
+
+            Metadata(title, cover)
+        } catch (e: Exception) {
+            Metadata(getTrackName(resId), null) // If error => return file name
+        } finally {
+            retriever.release()
+        }
     }
 }

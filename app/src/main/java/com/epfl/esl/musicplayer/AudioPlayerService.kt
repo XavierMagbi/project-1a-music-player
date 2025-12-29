@@ -1,7 +1,6 @@
 package com.epfl.esl.musicplayer
 
 import android.content.Context
-import android.media.Image
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
@@ -13,7 +12,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.invoke
 
 class AudioPlayerService (
     private val context: Context

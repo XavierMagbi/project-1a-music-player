@@ -16,16 +16,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
@@ -34,7 +30,6 @@ import androidx.compose.material.icons.filled.RepeatOn
 import androidx.compose.material.icons.filled.RepeatOneOn
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.ShuffleOn
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -239,13 +234,32 @@ fun PlayScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(playlist.size) { index ->
+                            // Extract id
                             val resId = playlist[index]
-                            val trackName = playScreenViewModel.getTrackName(resId)
-                            // For each music image + title
+                            // Extract metadata
+                            val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
+                            // Convert form ByteArray to Bitmap
+                            val trackPainter = if (trackImage != null) {
+                                BitmapPainter(BitmapFactory.decodeByteArray(trackImage, 0, trackImage.size).asImageBitmap())
+                            } else {
+                                painterResource(id = R.drawable.ic_launcher_foreground)
+                            }
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clickable{
+                                        playScreenViewModel.playCurrentTrack(index)
+                                        showQueue = false
+                                    }
                             ){
+                                Image(
+                                    painter = trackPainter,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .padding(4.dp)
+                                )
                                 Text(
                                     text = trackName
                                 )
