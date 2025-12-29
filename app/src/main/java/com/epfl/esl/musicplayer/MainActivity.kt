@@ -2,6 +2,7 @@ package com.epfl.esl.musicplayer
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -33,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,7 +45,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 
 class MainActivity : ComponentActivity() {
@@ -51,17 +56,22 @@ class MainActivity : ComponentActivity() {
     private var username by mutableStateOf("")
     private var imageUri by mutableStateOf<Uri?>(null)
     private var uriString by mutableStateOf("")
+    private var userKey by mutableStateOf("")
+
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+
+        dataClient = Wearable.getDataClient(this)
         setContent {
             MusicPlayerTheme {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBottomMenu by remember { mutableStateOf(true) }
+                var shouldShowBottomMenu by remember { mutableStateOf(false) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -156,12 +166,45 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    ){
-                            innerPadding ->
+                    )
+                    { innerPadding ->
                         NavHost(navController = navController,
-                            startDestination = "home",
+                            startDestination = "login",
                             modifier = Modifier.padding(innerPadding))
                         {
+                            composable("login") {
+                                val context = LocalContext.current
+                                LoginProfileScreen(
+                                    onNavigateToNewRecording = { loginInfo ->
+                                        username = loginInfo.username
+                                        imageUri = loginInfo.imageUri
+                                        userKey = loginInfo.userKey
+
+
+
+                                        if (imageUri == null ||username == "") { // Modifiable si on veut autoriser la connexion sans image
+                                            Toast.makeText(
+                                                context, "Pick an image and a username!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+
+
+                                            uriString = URLEncoder.encode(
+                                                imageUri.toString(),
+                                                StandardCharsets.UTF_8.toString()
+                                            )
+                                            shouldShowBottomMenu = true
+                                            navController.navigate("home") {
+                                                popUpTo(navController.graph.id) {
+                                                    inclusive = true
+                                                }
+                                            }
+                                        }
+                                    },
+                                    dataClient
+                                )
+                            }
                             composable("home") {
                                 HomeScreen(onPlayerClicked = { })
                             }

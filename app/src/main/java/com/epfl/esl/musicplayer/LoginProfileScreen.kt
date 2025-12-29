@@ -7,14 +7,18 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -23,6 +27,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +59,7 @@ fun LoginProfileScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+        var isLoading by remember { mutableStateOf(false) }
         val username by loginProfileViewModel.username.observeAsState(initial = "")
         val password by loginProfileViewModel.password.observeAsState(initial = "")
         val imageUri by loginProfileViewModel.imageUri.observeAsState(initial = null)
@@ -74,8 +82,8 @@ fun LoginProfileScreen(
             onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) },
             onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
             onSignInButtonClicked = {
-
-
+                isLoading = true
+                loginProfileViewModel.fetchProfile()
             },
             onSignUpButtonClicked = {
                 loginProfileViewModel.sendDataToWear(context, dataClient)
@@ -83,7 +91,8 @@ fun LoginProfileScreen(
 
                 val userData = LoginInfo(
                     loginProfileViewModel.username.value ?: "",
-                    loginProfileViewModel.imageUri.value
+                    loginProfileViewModel.imageUri.value,
+                    loginProfileViewModel.key
                 )
                 onNavigateToNewRecording(userData)
             },
@@ -104,7 +113,50 @@ fun LoginProfileScreen(
                 Toast.LENGTH_SHORT
             ).show()
         }
+
+        val profilePresent by loginProfileViewModel.profilePresent.observeAsState()
+        profilePresent?.let { present ->
+            if (present) {
+                loginProfileViewModel.loadUserImageUri(context)
+            } else {
+                isLoading = false
+                Toast.makeText(context, "Incorrect username/password",
+                    Toast.LENGTH_LONG).show()
+                loginProfileViewModel.resetProfilePresent()
+            }
+        }
+
+        val userImageLoadingFinished by loginProfileViewModel.userImageLoadingFinished
+            .observeAsState()
+        userImageLoadingFinished?.let {
+            val loginInfo = LoginInfo(
+                loginProfileViewModel.username.value ?: "",
+                loginProfileViewModel.imageUri.value,
+                loginProfileViewModel.key
+            )
+            loginProfileViewModel.sendDataToWear(context, dataClient, true)
+            onNavigateToNewRecording(loginInfo)
+        }
+
+        if (isLoading) {
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background
+                    .copy(alpha = 0.5f)),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .width(64.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
+        }
     }
+
+
 }
 
 @Composable
@@ -117,7 +169,8 @@ fun LoginProfileContent(
     onSignInButtonClicked: () -> Unit,
     onSignUpButtonClicked: () -> Unit,
     onPickImageButtonClicked: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loginProfileViewModel: LoginProfileViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
@@ -194,7 +247,16 @@ fun LoginProfileContent(
                     Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
                 } else if (password.isBlank()) {
                     Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
-                } else if (imageUri == null) {
+
+                }else if(loginProfileViewModel.isPasswordValid(password)==false){
+                    Toast.makeText(
+                        context,
+                        "Password must be 8+ chars, include upper+lower case, a digit, and one of ! , + ^",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                else if (imageUri == null) {
                     Toast.makeText(context, "Pick an image", Toast.LENGTH_SHORT).show()
                 } else {
                     onSignUpButtonClicked()
