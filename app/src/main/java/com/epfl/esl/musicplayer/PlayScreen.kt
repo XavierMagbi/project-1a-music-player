@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,12 +101,15 @@ fun PlayScreen(
                 painter = painter,
                 contentDescription = "",
                 modifier = modifier
-                    .size(400.dp)
+                    .size(300.dp)
             )
             // Music title
             Text(
                 text = title,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             // Time slider
             Slider(

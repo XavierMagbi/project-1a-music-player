@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -130,7 +131,8 @@ class MainActivity : ComponentActivity() {
                                                 imageVector = Icons.Filled.Home ,
                                                 contentDescription = getString(
                                                     R.string.home_content_description
-                                                )
+                                                ),
+                                                modifier = Modifier.size(24.dp)
                                             )
                                         },
                                         label = { Text(getString(R.string.home_navigation_label)) }
@@ -145,7 +147,8 @@ class MainActivity : ComponentActivity() {
                                                 imageVector = Icons.Filled.PlayCircleFilled ,
                                                 contentDescription = getString(
                                                     R.string.player_content_description
-                                                )
+                                                ),
+                                                modifier = Modifier.size(24.dp)
                                             )
                                         },
                                         label = { Text(getString(R.string.palyer_navigation_label)) }
