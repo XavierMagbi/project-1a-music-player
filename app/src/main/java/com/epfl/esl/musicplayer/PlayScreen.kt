@@ -26,6 +26,11 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOn
+import androidx.compose.material.icons.filled.RepeatOneOn
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
@@ -50,15 +55,21 @@ fun PlayScreen(
     val duration by playScreenViewModel.duration.observeAsState(0)
     val title by playScreenViewModel.title.observeAsState(initial = "")
     val coverImage by playScreenViewModel.coverImage.observeAsState()
+    val shuffleOn by playScreenViewModel.shuffleOn.observeAsState(initial = false)
+    val repeatMode by playScreenViewModel.repeatMode.observeAsState(0)
 
     // To convert ByteArray to Image
     val painter = if (coverImage != null) {
-        val bitmap = remember(coverImage){
-            BitmapFactory.decodeByteArray(coverImage, 0, coverImage!!.size).asImageBitmap()
+        val bitmap = remember(coverImage) {
+            BitmapFactory.decodeByteArray(
+                coverImage,
+                0,
+                coverImage!!.size
+            ).asImageBitmap()
         }
         BitmapPainter(bitmap)
     } else {
-        painterResource(id = R.drawable.ic_launcher_foreground) // Image par défaut
+        painterResource(id = R.drawable.ic_launcher_foreground)
     }
 
     // To convert ms to readable time
@@ -72,10 +83,11 @@ fun PlayScreen(
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
-        ) {
-        Column (
+    ) {
+        Column(
             horizontalAlignment = Alignment.CenterHorizontally
-        ){
+        ) {
+
             Image(
                 painter = painter,
                 contentDescription = "",
@@ -88,28 +100,29 @@ fun PlayScreen(
                 text = title,
                 textAlign = TextAlign.Center
             )
+
             Slider(
                 value = currentPosition.toFloat(),
-                onValueChange = {playScreenViewModel.onSeek(it)},
-                valueRange = 0f..duration.toFloat(), // From zero to duration
+                onValueChange = { playScreenViewModel.onSeek(it) },
+                valueRange = 0f..duration.toFloat(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
+
             // Time display
             Row(
                 verticalAlignment = Alignment.CenterVertically
-                ) {
-                // Time passed
+            ) {
                 Text(
                     text = formatTime(currentPosition),
                     style = MaterialTheme.typography.bodySmall
                 )
 
-                // Spacer to get times on edges
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                androidx.compose.foundation.layout.Spacer(
+                    modifier = Modifier.weight(1f)
+                )
 
-                // Temps left
                 Text(
                     text = "-${formatTime(duration - currentPosition)}",
                     style = MaterialTheme.typography.bodySmall
@@ -118,7 +131,7 @@ fun PlayScreen(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 Icon(
                     imageVector = Icons.Filled.FastRewind,
                     contentDescription = "",
@@ -129,9 +142,10 @@ fun PlayScreen(
                             playScreenViewModel.onLeftArrowClick()
                         }
                 )
+
                 Icon(
-                    imageVector = if (isPlaying == true) Icons.Filled.Pause else
-                        Icons.Filled.PlayArrow,
+                    imageVector = if (isPlaying == true)
+                        Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = "",
                     modifier = modifier
                         .size(200.dp)
@@ -140,6 +154,7 @@ fun PlayScreen(
                             playScreenViewModel.onPlayPauseClick()
                         }
                 )
+
                 Icon(
                     imageVector = Icons.Filled.FastForward,
                     contentDescription = "",
@@ -151,9 +166,41 @@ fun PlayScreen(
                         }
                 )
             }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    imageVector = if (shuffleOn) Icons.Filled.ShuffleOn else Icons.Filled.Shuffle,
+                    contentDescription = "",
+                    modifier = modifier
+                        .size(50.dp)
+                        .weight(1f)
+                        .clickable {
+                            playScreenViewModel.onShuffleClick()
+                        }
+                )
+
+                androidx.compose.foundation.layout.Spacer(
+                    modifier = Modifier.weight(1f)
+                )
+
+                Icon(
+                    imageVector = if (repeatMode == 0) Icons.Filled.Repeat else if (repeatMode == 1) Icons.Filled.RepeatOn else Icons.Filled.RepeatOneOn,
+                    contentDescription = "",
+                    modifier = modifier
+                        .size(50.dp)
+                        .weight(1f)
+                        .clickable {
+                            playScreenViewModel.onRepeatClick()
+                        }
+                )
+            }
         }
     }
 }
+
 
 @Preview
 @Composable
