@@ -23,6 +23,7 @@ class PlayScreenViewModel (
     val duration: LiveData<Int> = audioPlayer.duration
     val title: LiveData<String> = audioPlayer.title
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
+    val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
     private val originalPlaylist = listOf (

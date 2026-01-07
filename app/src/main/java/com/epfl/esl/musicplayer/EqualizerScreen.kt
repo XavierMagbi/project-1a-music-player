@@ -41,7 +41,9 @@ fun EqualizerScreen(
     }
 
     // Slider position
-    val smallFreqLevel by equalizerViewModel.smallFreqLevel.observeAsState(0f)
+    val bassLevel by equalizerViewModel.bassLevel.observeAsState(0f)
+    val midLevel by equalizerViewModel.midLevel.observeAsState(0f)
+    val trebleLevel by equalizerViewModel.trebleLevel.observeAsState(0f)
 
     // Set equalizer limits
     val minLevel = equalizer?.bandLevelRange?.get(0)?.toFloat() ?: -1500f
@@ -55,26 +57,41 @@ fun EqualizerScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Small frequencies"
-            )
-
-            Text(
-                text = "${(smallFreqLevel / 100).toInt()} dB"
-            )
-
+            // Bass
+            Text(text = "Bass: ${(bassLevel / 100).toInt()} dB")
             Slider(
-                value = smallFreqLevel,
+                value = bassLevel,
                 onValueChange = { newValue ->
-                    // Update slider position
-                    equalizerViewModel.updateSmallFreqLevel(newValue)
-                    // Update gain for small frequencies here
+                    equalizerViewModel.updateBassLevel(newValue)
                     equalizer?.setBandLevel(0, newValue.toInt().toShort())
                 },
-                valueRange = minLevel..maxLevel,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                valueRange = -2000f..2000f,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            )
+
+            // Mid
+            Text(text = "Mid: ${(midLevel / 100).toInt()} dB")
+            Slider(
+                value = midLevel,
+                onValueChange = { newValue ->
+                    equalizerViewModel.updateMidLevel(newValue)
+                    equalizer?.setBandLevel(2, newValue.toInt().toShort())
+                },
+                valueRange = -2000f..2000f,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            )
+
+            // Treble
+            Text(text = "Treble: ${(trebleLevel / 100).toInt()} dB")
+            Slider(
+                value = trebleLevel,
+                onValueChange = { newValue ->
+                    equalizerViewModel.updateTrebleLevel(newValue)
+                    val lastBand = (equalizer?.numberOfBands ?: 1) - 1
+                    equalizer?.setBandLevel(lastBand.toShort(), newValue.toInt().toShort())
+                },
+                valueRange = -2000f..2000f,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             )
         }
     }

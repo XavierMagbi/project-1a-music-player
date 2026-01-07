@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -195,7 +196,11 @@ class MainActivity : ComponentActivity() {
                                 PlayScreen(playScreenViewModel = playScreenViewModel)
                             }
                             composable("equalizer") {
-                                EqualizerScreen(equalizerViewModel = equalizerViewModel, audioSessionId = 0)
+                                val audioSessionId by playScreenViewModel.audioSessionId.observeAsState(0)
+                                EqualizerScreen(
+                                    equalizerViewModel = equalizerViewModel,
+                                    audioSessionId = audioSessionId ?: 0
+                                )
                             }
                         }
 

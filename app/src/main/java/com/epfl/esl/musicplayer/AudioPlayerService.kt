@@ -39,8 +39,13 @@ class AudioPlayerService (
     val cover: LiveData<ByteArray?>
         get() = _cover
 
-
     var onCompletionListener: (() -> Unit)? = null
+
+    // For equalizer
+    private val _audioSessionId = MutableLiveData<Int?>(null)
+    val audioSessionId: LiveData<Int?>
+        get() = _audioSessionId
+
 
     fun play(musicResId: Int){
         // To stop playing the initial song when switching to another one
@@ -73,6 +78,8 @@ class AudioPlayerService (
 
         // To play the music
         mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
+        // For equalizer
+        _audioSessionId.value = mediaPlayer?.audioSessionId
         mediaPlayer?.start()
         _isPlaying.value = true
         startUpdatingProgress()
