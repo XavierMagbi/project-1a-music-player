@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
-    application : Application
+    application : Application,
 ) : AndroidViewModel(application) {
 
     private val audioPlayer = AudioPlayerService(application.applicationContext)

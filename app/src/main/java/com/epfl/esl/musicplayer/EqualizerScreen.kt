@@ -2,10 +2,15 @@ package com.epfl.esl.musicplayer
 
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -23,6 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun EqualizerScreen(
@@ -30,25 +38,21 @@ fun EqualizerScreen(
     equalizerViewModel: EqualizerViewModel = viewModel(),
     audioSessionId: Int
 ) {
-
-    // Equalizer for music. Remember to avoid equalizer reinitialization every screen rebuild
-    val equalizer = remember{
-        try {
-            android.media.audiofx.Equalizer(0, audioSessionId).apply{ enabled = true } // 0: Standard priority, Enabled required as Equalizer object is off by default
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    // Slider position
+    // Bands
+    val subBassLevel by equalizerViewModel.subBassLevel.observeAsState(0f)
     val bassLevel by equalizerViewModel.bassLevel.observeAsState(0f)
-    val midLevel by equalizerViewModel.midLevel.observeAsState(0f)
+    val midrangeLevel by equalizerViewModel.midrangeLevel.observeAsState(0f)
+    val upperMidLevel by equalizerViewModel.upperMidLevel.observeAsState(0f)
     val trebleLevel by equalizerViewModel.trebleLevel.observeAsState(0f)
 
     // Set equalizer limits
-    val minLevel = equalizer?.bandLevelRange?.get(0)?.toFloat() ?: -1500f
-    val maxLevel = equalizer?.bandLevelRange?.get(1)?.toFloat() ?: 1500f
+    val minLevel = -2000f
+    val maxLevel = 2000f
 
+    // For equalizer settings to be remembered between songs
+    LaunchedEffect(audioSessionId) {
+        equalizerViewModel.setEqualizer(audioSessionId)
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -57,43 +61,90 @@ fun EqualizerScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Bass
-            Text(text = "Bass: ${(bassLevel / 100).toInt()} dB")
-            Slider(
-                value = bassLevel,
-                onValueChange = { newValue ->
-                    equalizerViewModel.updateBassLevel(newValue)
-                    equalizer?.setBandLevel(0, newValue.toInt().toShort())
-                },
-                valueRange = -2000f..2000f,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            )
+            if (audioSessionId > 0) {
+                // Sub-Bass
+                Text(text = "Sub-Bass (60 Hz): ${(subBassLevel / 100).toInt()} dB")
+                Slider(
+                    value = subBassLevel,
+                    onValueChange = { newValue ->
+                        equalizerViewModel.updateSubBassLevel(newValue)
+                    },
+                    valueRange = minLevel..maxLevel,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
 
-            // Mid
-            Text(text = "Mid: ${(midLevel / 100).toInt()} dB")
-            Slider(
-                value = midLevel,
-                onValueChange = { newValue ->
-                    equalizerViewModel.updateMidLevel(newValue)
-                    equalizer?.setBandLevel(2, newValue.toInt().toShort())
-                },
-                valueRange = -2000f..2000f,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            )
+                // Bass
+                Text(text = "Bass (230 Hz): ${(bassLevel / 100).toInt()} dB")
+                Slider(
+                    value = bassLevel,
+                    onValueChange = { newValue ->
+                        equalizerViewModel.updateBassLevel(newValue)
+                    },
+                    valueRange = minLevel..maxLevel,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
 
-            // Treble
-            Text(text = "Treble: ${(trebleLevel / 100).toInt()} dB")
-            Slider(
-                value = trebleLevel,
-                onValueChange = { newValue ->
-                    equalizerViewModel.updateTrebleLevel(newValue)
-                    val lastBand = (equalizer?.numberOfBands ?: 1) - 1
-                    equalizer?.setBandLevel(lastBand.toShort(), newValue.toInt().toShort())
-                },
-                valueRange = -2000f..2000f,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            )
+                // Midrange
+                Text(text = "Midrange (910 Hz): ${(midrangeLevel / 100).toInt()} dB")
+                Slider(
+                    value = midrangeLevel,
+                    onValueChange = { newValue ->
+                        equalizerViewModel.updateMidLevel(newValue)
+                    },
+                    valueRange = minLevel..maxLevel,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
+
+                // Upper-Midrange
+                Text(text = "Upper-Midrange (3600 Hz): ${(upperMidLevel / 100).toInt()} dB")
+                Slider(
+                    value = upperMidLevel,
+                    onValueChange = { newValue ->
+                        equalizerViewModel.updateUpperMidLevel(newValue)
+                    },
+                    valueRange = minLevel..maxLevel,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
+
+                // Treble
+                Text(text = "Treble (14 kHz): ${(trebleLevel / 100).toInt()} dB")
+                Slider(
+                    value = trebleLevel,
+                    onValueChange = { newValue ->
+                        equalizerViewModel.updateTrebleLevel(newValue)
+                    },
+                    valueRange = minLevel..maxLevel,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Reset button
+                    IconButton(
+                        onClick = {
+                            equalizerViewModel.resetAll()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Reset"
+                        )
+                    }
+                    // General gain like round volume button
+                }
+            } else {
+                Text("Play a song first to use the equalizer")
+            }
         }
     }
 }
 
+
+@Preview
+@Composable
+private fun EqualizerScreenPreview() {
+    MusicPlayerTheme {
+        EqualizerScreen(audioSessionId = 0)
+    }
+}
