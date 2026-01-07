@@ -50,9 +50,9 @@ fun EqualizerScreen(
     val maxLevel = 2000f
 
     // For equalizer settings to be remembered between songs
-    LaunchedEffect(audioSessionId) {
-        equalizerViewModel.setEqualizer(audioSessionId)
-    }
+//    LaunchedEffect(audioSessionId) {
+//        equalizerViewModel.setEqualizer(audioSessionId)
+//    }
 
     Surface(
         modifier = modifier.fillMaxSize(),

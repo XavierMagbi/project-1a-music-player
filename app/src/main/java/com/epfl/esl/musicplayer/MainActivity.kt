@@ -62,10 +62,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MusicPlayerTheme {
-                // To get back to same music after navigation
-                val playScreenViewModel: PlayScreenViewModel = viewModel()
-                // To get back to same equalizer after navigation
                 val equalizerViewModel: EqualizerViewModel = viewModel()
+                val playScreenViewModel: PlayScreenViewModel = viewModel {
+                    PlayScreenViewModel(this@MainActivity.application, equalizerViewModel)
+                }
 
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

@@ -13,6 +13,7 @@ data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
     application : Application,
+    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application)
 ) : AndroidViewModel(application) {
 
     private val audioPlayer = AudioPlayerService(application.applicationContext)
@@ -90,6 +91,12 @@ class PlayScreenViewModel (
     }
 
     init {
+        // Initialize equalizer
+        audioPlayer.audioSessionId.observeForever { sessionId ->
+            if (sessionId != null && sessionId > 0) {
+                equalizerViewModel.setEqualizer(sessionId)
+            }
+        }
         // To handle end of music
         audioPlayer.onCompletionListener = {
             onRightArrowClick()
