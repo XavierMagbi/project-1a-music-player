@@ -35,4 +35,6 @@
     <string name="esl_icon_content_description">ESL icon</string>
     <string name="heart_rate">Heart Rate</string>
     <string name="my_playlist_text">My Playlists</string>
+    <string name="equalizer_content_description">Equalizer screen</string>
+    <string name="equalizer_navigation_label">Equalizer</string>
 </resources>

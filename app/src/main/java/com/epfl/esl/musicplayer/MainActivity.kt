@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayCircleFilled
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -52,12 +54,18 @@ class MainActivity : ComponentActivity() {
     private var imageUri by mutableStateOf<Uri?>(null)
     private var uriString by mutableStateOf("")
 
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MusicPlayerTheme {
+                // To get back to same music after navigation
+                val playScreenViewModel: PlayScreenViewModel = viewModel()
+                // To get back to same equalizer after navigation
+                val equalizerViewModel: EqualizerViewModel = viewModel()
+
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
@@ -138,6 +146,22 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(getString(R.string.home_navigation_label)) }
                                     )
                                     NavigationBarItem(
+                                        selected = currentRoute == "equalizer",
+                                        onClick = {
+                                            navController.navigate("equalizer")
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.Tune ,
+                                                contentDescription = getString(
+                                                    R.string.equalizer_content_description
+                                                ),
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        },
+                                        label = { Text(getString(R.string.equalizer_navigation_label)) }
+                                    )
+                                    NavigationBarItem(
                                         selected = currentRoute == "player",
                                         onClick = {
                                             navController.navigate("player")
@@ -168,7 +192,10 @@ class MainActivity : ComponentActivity() {
                                 HomeScreen(onPlayerClicked = { })
                             }
                             composable("player") {
-                                PlayScreen()
+                                PlayScreen(playScreenViewModel = playScreenViewModel)
+                            }
+                            composable("equalizer") {
+                                EqualizerScreen(equalizerViewModel = equalizerViewModel, audioSessionId = 0)
                             }
                         }
 
