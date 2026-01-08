@@ -1,10 +1,12 @@
 package com.epfl.esl.musicplayer
 
 import android.app.Application
+import android.media.MediaPlayer
 import android.media.audiofx.Equalizer
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import android.util.Log
 
 class EqualizerViewModel(
     application: Application
@@ -27,9 +29,14 @@ class EqualizerViewModel(
 
     private var currentEqualizer: Equalizer? = null
 
+    // For pads
+    private val appContext = application.applicationContext
+    private var padSoundPlayer: MediaPlayer? = null
+
     fun setEqualizer(audioSessionId: Int) {
         try {
             currentEqualizer = Equalizer(0, audioSessionId).apply { enabled = true }
+
             // Apply old settings to new equalizer
             applyCurrentSettings()
         } catch (e: Exception) {
@@ -89,5 +96,27 @@ class EqualizerViewModel(
         currentEqualizer?.setBandLevel(2, 0)
         currentEqualizer?.setBandLevel(3, 0)
         currentEqualizer?.setBandLevel(4, 0)
+    }
+
+    fun playPadSound(padId: Int) {
+        try {
+            // Mapper ID to corresponding file
+            val soundResId = when(padId) {
+                0 -> R.raw.pad_sound0
+                1 -> R.raw.pad_sound1
+                2 -> R.raw.pad_sound2
+                3 -> R.raw.pad_sound3
+                4 -> R.raw.pad_sound4
+                5 -> R.raw.pad_sound5
+                else -> R.raw.pad_sound0
+            }
+
+            // Play pad sound
+            padSoundPlayer = MediaPlayer.create(appContext, soundResId)
+            padSoundPlayer?.start()
+
+        } catch (e: Exception) {
+            Log.e("EqualizerViewModel", "Error playing pad sound: ${e.message}")
+        }
     }
 }

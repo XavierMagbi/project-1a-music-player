@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
@@ -31,6 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun EqualizerScreen(
@@ -46,13 +51,8 @@ fun EqualizerScreen(
     val trebleLevel by equalizerViewModel.trebleLevel.observeAsState(0f)
 
     // Set equalizer limits
-    val minLevel = -2000f
-    val maxLevel = 2000f
-
-    // For equalizer settings to be remembered between songs
-//    LaunchedEffect(audioSessionId) {
-//        equalizerViewModel.setEqualizer(audioSessionId)
-//    }
+    val minLevel = -1500f
+    val maxLevel = 1500f
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -116,6 +116,53 @@ fun EqualizerScreen(
                     valueRange = minLevel..maxLevel,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
+
+                // Pad Buttons
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Row 1
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        repeat(3) { index ->
+                            Button(
+                                onClick = {
+                                    equalizerViewModel.playPadSound(index) // To play pad sound 0 to 2
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .size(80.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                // Empty button
+                            }
+                        }
+                    }
+                    // Row 2
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        repeat(3) { index ->
+                            Button(
+                                onClick = {
+                                    equalizerViewModel.playPadSound(index + 3) // To play pad sounds 3 to 5
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .size(80.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                // Empty button
+                            }
+                        }
+                    }
+                }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically
