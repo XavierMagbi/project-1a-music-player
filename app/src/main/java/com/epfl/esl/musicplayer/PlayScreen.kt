@@ -12,14 +12,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
@@ -28,11 +33,14 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOn
 import androidx.compose.material.icons.filled.RepeatOneOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -46,6 +54,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,11 +72,18 @@ fun PlayScreen(
     val coverImage by playScreenViewModel.coverImage.observeAsState()
     val shuffleOn by playScreenViewModel.shuffleOn.observeAsState(initial = false)
     val repeatMode by playScreenViewModel.repeatMode.observeAsState(0)
+    val currentTrackIndex = playScreenViewModel.currentTrackIndex
     val playlist = playScreenViewModel.currentPlaylist
 
     // Queue slider state
     var showQueue by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+
+    // For research query
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Indicate list or player mode
+    var isPlayerActive by remember { mutableStateOf(false) }
 
     // To convert ByteArray to Image
     val painter = if (coverImage != null) {
@@ -93,132 +111,272 @@ fun PlayScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Music image
-            Image(
-                painter = painter,
-                contentDescription = "",
-                modifier = modifier
-                    .size(300.dp)
-            )
-            // Music title
-            Text(
-                text = title,
-                textAlign = TextAlign.Center,
-                minLines = 2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            // Time slider
-            Slider(
-                value = currentPosition.toFloat(),
-                onValueChange = { playScreenViewModel.onSeek(it) },
-                valueRange = 0f..duration.toFloat(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-            // Time display
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+        if (isPlayerActive){ // Player mode
+            LazyColumn(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = formatTime(currentPosition),
-                    style = MaterialTheme.typography.bodySmall
-                )
+                // Return to list mode
+                item{
+                    // Arrow back
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { isPlayerActive = false }) {
+                            Icon(Icons.Default.ArrowBack, "Back")
+                        }
+                    }
+                }
+                // Music image
+                item {
+                    Image(
+                        painter = painter,
+                        contentDescription = "",
+                        modifier = modifier
+                            .size(275.dp)
+                    )
+                }
 
-                androidx.compose.foundation.layout.Spacer(
-                    modifier = Modifier.weight(1f)
-                )
+                // Music title
+                item {
+                    Text(
+                        text = title,
+                        textAlign = TextAlign.Center,
+                        minLines = 2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
-                Text(
-                    text = "-${formatTime(duration - currentPosition)}",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                // Time slider
+                item {
+                    Slider(
+                        value = currentPosition.toFloat(),
+                        onValueChange = { playScreenViewModel.onSeek(it) },
+                        valueRange = 0f..duration.toFloat(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    )
+                }
+
+                // Time display
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatTime(currentPosition),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        androidx.compose.foundation.layout.Spacer(
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Text(
+                            text = "-${formatTime(duration - currentPosition)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                // Arrow + Play/Pause buttons
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left arrow
+                        Icon(
+                            imageVector = Icons.Filled.FastRewind,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(100.dp)
+                                .weight(1f)
+                                .clickable {
+                                    playScreenViewModel.onLeftArrowClick()
+                                }
+                        )
+                        // Play/pause
+                        Icon(
+                            imageVector = if (isPlaying == true)
+                                Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(200.dp)
+                                .weight(1f)
+                                .clickable {
+                                    playScreenViewModel.onPlayPauseClick()
+                                }
+                        )
+                        // Right arrow
+                        Icon(
+                            imageVector = Icons.Filled.FastForward,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(100.dp)
+                                .weight(1f)
+                                .clickable {
+                                    playScreenViewModel.onRightArrowClick()
+                                }
+                        )
+                    }
+                }
+
+                // Shuffle + Queue + Loop buttons
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Shuffle button
+                        Icon(
+                            imageVector = if (shuffleOn) Icons.Filled.ShuffleOn else Icons.Filled.Shuffle,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(50.dp)
+                                .weight(1f)
+                                .clickable {
+                                    playScreenViewModel.onShuffleClick()
+                                }
+                        )
+                        // Music queue button
+                        Icon(
+                            imageVector = Icons.Filled.QueueMusic,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(50.dp)
+                                .weight(1f)
+                                .clickable {
+                                    showQueue = true
+                                }
+                        )
+                        // Loop button
+                        Icon(
+                            imageVector = if (repeatMode == 0) Icons.Filled.Repeat else if (repeatMode == 1) Icons.Filled.RepeatOn else Icons.Filled.RepeatOneOn,
+                            contentDescription = "",
+                            modifier = modifier
+                                .size(50.dp)
+                                .weight(1f)
+                                .clickable {
+                                    playScreenViewModel.onRepeatClick()
+                                }
+                        )
+                    }
+                }
             }
-            // Arrow + Play/Pause buttons
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+        } else { // List mode
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Left arrow
-                Icon(
-                    imageVector = Icons.Filled.FastRewind,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(100.dp)
-                        .weight(1f)
-                        .clickable {
-                            playScreenViewModel.onLeftArrowClick()
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Search bar
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            placeholder = { Text("Search songs...") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search music"
+                                )
+                            },
+                            singleLine = true
+                        )
+                    }
+
+                    // Music list from current playlist
+                    items(playlist.size) { index ->
+                        // Extract id
+                        val resId = playlist[index]
+                        // Extract metadata
+                        val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
+                        // Convert form ByteArray to Bitmap
+                        val trackPainter = if (trackImage != null) {
+                            BitmapPainter(
+                                BitmapFactory.decodeByteArray(
+                                    trackImage,
+                                    0,
+                                    trackImage.size
+                                ).asImageBitmap()
+                            )
+                        } else {
+                            painterResource(id = R.drawable.ic_launcher_foreground)
                         }
-                )
-                // Play/pause
-                Icon(
-                    imageVector = if (isPlaying == true)
-                        Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(200.dp)
-                        .weight(1f)
-                        .clickable {
-                            playScreenViewModel.onPlayPauseClick()
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    playScreenViewModel.playCurrentTrack(index)
+                                    isPlayerActive = true
+                                }
+                                .background(
+                                    if (currentTrackIndex == index)
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    else
+                                        MaterialTheme.colorScheme.background
+                                )
+                        ) {
+                            Image(
+                                painter = trackPainter,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(4.dp)
+                            )
+                            Text(
+                                text = trackName
+                            )
                         }
-                )
-                // Right arrow
-                Icon(
-                    imageVector = Icons.Filled.FastForward,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(100.dp)
-                        .weight(1f)
-                        .clickable {
-                            playScreenViewModel.onRightArrowClick()
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                if (isPlaying == true) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isPlayerActive = true },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painter,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .padding(8.dp)
+                            )
+                            Text(
+                                text = title,
+                                modifier = Modifier.weight(1f),
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1
+                            )
                         }
-                )
-            }
-            // Shuffle + Queue + Loop buttons
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Shuffle button
-                Icon(
-                    imageVector = if (shuffleOn) Icons.Filled.ShuffleOn else Icons.Filled.Shuffle,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(50.dp)
-                        .weight(1f)
-                        .clickable {
-                            playScreenViewModel.onShuffleClick()
-                        }
-                )
-                // Music queue button
-                Icon(
-                    imageVector = Icons.Filled.QueueMusic,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(50.dp)
-                        .weight(1f)
-                        .clickable {
-                            showQueue = true
-                        }
-                )
-                // Loop button
-                Icon(
-                    imageVector = if (repeatMode == 0) Icons.Filled.Repeat else if (repeatMode == 1) Icons.Filled.RepeatOn else Icons.Filled.RepeatOneOn,
-                    contentDescription = "",
-                    modifier = modifier
-                        .size(50.dp)
-                        .weight(1f)
-                        .clickable {
-                            playScreenViewModel.onRepeatClick()
-                        }
-                )
+                    }
+                }
             }
         }
+    }
 
-        // Queue sheet
-        if (showQueue){
+
+    // Queue sheet
+    if (showQueue){
             ModalBottomSheet(
                 onDismissRequest = { showQueue = false },
                 sheetState = sheetState
@@ -273,7 +431,6 @@ fun PlayScreen(
                 }
             }
         }
-    }
 }
 
 

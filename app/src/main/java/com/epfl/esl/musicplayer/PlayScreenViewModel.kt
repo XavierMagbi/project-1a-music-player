@@ -82,6 +82,7 @@ class PlayScreenViewModel (
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
+        currentTrackIndex = index
         audioPlayer.play(currentPlaylist[index])
         isPlayerInitialized = true
     }
