@@ -208,7 +208,7 @@ class MainActivity : ComponentActivity() {
                             composable("playlist/{playlistId}")
                             {backStackEntry->
                                 val playlistId = backStackEntry.arguments?.getString("playlistId")
-                                PlaylistScreen(PlaylistId = playlistId)
+                                PlaylistScreen(playlistId = playlistId?:"")
                             }
 
                             composable("discover")

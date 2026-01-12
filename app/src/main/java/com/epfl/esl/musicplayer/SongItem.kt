@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 
 data class SongItem (
     val Artist: String? = "",
-    val Name: String? = "",
+    val Name: String = "",
     val Path: String?="",
     val Id: String =""
 )

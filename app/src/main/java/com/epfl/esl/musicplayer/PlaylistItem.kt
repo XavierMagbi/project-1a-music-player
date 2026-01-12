@@ -40,7 +40,7 @@ fun PlaylistItemRow(playlistItem: PlaylistItem,
             containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onPlaylistClicked(playlistItem.name ?: "")},
+            .clickable { onPlaylistClicked(playlistItem.id ?: "")},
     ) {
         Row(
             modifier = Modifier
