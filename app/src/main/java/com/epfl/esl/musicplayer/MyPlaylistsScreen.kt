@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,19 +22,15 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun HomeScreen(onPlayerClicked: () -> Unit,
-               homeViewModel: HomeViewModel = viewModel(),
-               modifier: Modifier = Modifier) {
+fun MyPlaylistsScreen(onPlaylistClicked: (String) -> Unit,
+                      myPlalistsViewModel: MyPlaylistsViewModel = viewModel(),
+                      modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -44,7 +39,7 @@ fun HomeScreen(onPlayerClicked: () -> Unit,
 
 
         var showDialog by remember { mutableStateOf(false) }
-        val playlists by homeViewModel.playlists.observeAsState()
+        val playlists by myPlalistsViewModel.playlists.observeAsState()
 
         Scaffold(
             floatingActionButton = {
@@ -62,14 +57,19 @@ fun HomeScreen(onPlayerClicked: () -> Unit,
                 playlists?.let {
                     LazyColumn{
                         items(it) { playlist ->
-                            PlaylistItemRow(playlistItem = playlist, modifier=modifier.padding(8.dp))
+                            PlaylistItemRow(playlistItem = playlist,
+                                onPlaylistClicked=onPlaylistClicked,
+                                onDeleteClicked ={id->
+                                    myPlalistsViewModel.deletePlaylist(id)
+                                } ,
+                                modifier=modifier.padding(8.dp))
                         }
                     }
                 }
                 if (showDialog) {
                     AddPlaylistDialog(
                         onAdd = { name ->
-                            homeViewModel.addPlaylist(name)
+                            myPlalistsViewModel.addPlaylist(name)
                             showDialog = false
                         },
                         onCancel = {
@@ -127,10 +127,4 @@ fun AddPlaylistDialog(onAdd: (String)->Unit,
     
 }
 
-@Preview
-@Composable
-private fun HomeScreenPreview() {
-    HomeScreen({})
-    
-}
 

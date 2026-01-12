@@ -18,7 +18,7 @@ val samplePlaylists = listOf(
     PlaylistItem(name = "Top 50 Global", author = "Charts")
 )
 
-class HomeViewModel:ViewModel() {
+class MyPlaylistsViewModel:ViewModel() {
     private var _playlists = MutableLiveData<List<PlaylistItem>>(listOf())
     //for initial debug
     //private var _playlists = MutableLiveData<List<PlaylistItem>>(samplePlaylists)
@@ -81,6 +81,12 @@ class HomeViewModel:ViewModel() {
 
             override fun onCancelled(error: DatabaseError) {}
         })
+    }
+    fun deletePlaylist(playlistId: String) {
+        if (playlistId.isBlank()) return
+
+        playlistRef.child(playlistId).removeValue()
+
     }
 
 

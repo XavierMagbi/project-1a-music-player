@@ -35,4 +35,9 @@
     <string name="esl_icon_content_description">ESL icon</string>
     <string name="heart_rate">Heart Rate</string>
     <string name="my_playlist_text">My Playlists</string>
+    <string name="playlists_content_description">playlists nav icon\n</string>
+    <string name="palylists_navigation_label">My Playlists</string>
+    <string name="discover_content_description">discover music icon\n</string>
+    <string name="discover_navigation_label">Discover</string>
+    <string name="discover_text">Discover Music</string>
 </resources>
