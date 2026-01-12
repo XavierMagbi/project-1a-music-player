@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -34,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun DiscoverScreen(
+    onSongClicked: (List<SongItem>, Int) -> Unit,
     discoverViewModel: DiscoverViewModel= viewModel(),
     modifier: Modifier=Modifier
 ){
@@ -54,12 +56,16 @@ fun DiscoverScreen(
             Text(text = stringResource(id = R.string.discover_text))
             songs?.let {
                 LazyColumn {
-                    items(it) { song ->
+                    itemsIndexed(it) { index, song ->
+
                         SongItemRow(
                             songItem = song,
                             onAddClicked={
                                 selectedSongId=song.Id
                                 showDialog=true},
+                            onSongClicked = onSongClicked,
+                            currentPlaylist = songs?: emptyList(),
+                            songIdx = index,
                             modifier = modifier.padding(8.dp))
                     }
                 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -53,8 +54,15 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val audioService = AudioPlayerService(applicationContext)
         enableEdgeToEdge()
         setContent {
+            val playViewModel: PlayScreenViewModel = viewModel(
+                factory = PlayScreenViewModelFactory(
+                    application = application,
+                    audioPlayerService = audioService
+                )
+            )
             MusicPlayerTheme {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -203,17 +211,20 @@ class MainActivity : ComponentActivity() {
                                 })
                             }
                             composable("player") {
-                                PlayScreen()
+                                PlayScreen(playScreenViewModel = playViewModel)
                             }
                             composable("playlist/{playlistId}")
                             {backStackEntry->
                                 val playlistId = backStackEntry.arguments?.getString("playlistId")
-                                PlaylistScreen(playlistId = playlistId?:"")
+                                PlaylistScreen(
+                                    playlistId = playlistId?:"",
+                                    onSongClicked=playViewModel::changePlaylist
+                                    )
                             }
 
                             composable("discover")
                             {
-                                DiscoverScreen()
+                                DiscoverScreen(onSongClicked=playViewModel::changePlaylist)
                             }
                         }
 

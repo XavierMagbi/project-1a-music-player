@@ -33,6 +33,9 @@ data class SongItem (
 fun SongItemRow(
     songItem: SongItem,
     onAddClicked:()->Unit,
+    onSongClicked:(List<SongItem>, Int) -> Unit,
+    currentPlaylist:List<SongItem>,
+    songIdx:Int,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -40,6 +43,7 @@ fun SongItemRow(
             containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = modifier
             .fillMaxWidth()
+            .clickable { onSongClicked(currentPlaylist,songIdx)}
     ) {
         Row(
             modifier = Modifier

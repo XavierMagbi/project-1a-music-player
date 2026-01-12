@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 @Composable
 fun PlayScreen(
     modifier: Modifier = Modifier,
-    playScreenViewModel: PlayScreenViewModel = viewModel()
+    playScreenViewModel: PlayScreenViewModel
 ) {
 
     val isPlaying by playScreenViewModel.isPlaying.observeAsState(initial = false)
@@ -237,10 +237,12 @@ fun PlayScreen(
                             // Extract id
                             val resId = playlist[index]
                             // Extract metadata
-                            val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
+                            //val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
+                            val trackName=""
+                            val trackImage=null
                             // Convert form ByteArray to Bitmap
                             val trackPainter = if (trackImage != null) {
-                                BitmapPainter(BitmapFactory.decodeByteArray(trackImage, 0, trackImage.size).asImageBitmap())
+                                //BitmapPainter(BitmapFactory.decodeByteArray(trackImage, 0, trackImage.size).asImageBitmap())
                             } else {
                                 painterResource(id = R.drawable.ic_launcher_foreground)
                             }
@@ -254,7 +256,8 @@ fun PlayScreen(
                                     }
                             ){
                                 Image(
-                                    painter = trackPainter,
+                                    //painter = trackPainter,
+                                    painter=painterResource(id = R.drawable.ic_launcher_foreground),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(50.dp)
@@ -273,10 +276,3 @@ fun PlayScreen(
 }
 
 
-@Preview
-@Composable
-private fun PlayScreenPreview() {
-    MusicPlayerTheme {
-        PlayScreen()
-    }
-}

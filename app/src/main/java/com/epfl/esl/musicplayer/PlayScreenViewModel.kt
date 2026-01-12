@@ -8,15 +8,19 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.google.firebase.storage.FirebaseStorage
 
 data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
-    application : Application
+    application : Application,
+    audioPlayer: AudioPlayerService = AudioPlayerService(application.applicationContext)
 ) : AndroidViewModel(application) {
 
-    private val audioPlayer = AudioPlayerService(application.applicationContext)
-
+    //private val audioPlayer = AudioPlayerService(application.applicationContext)
+    private val audioPlayer = audioPlayer
     // Service variables
     val isPlaying: LiveData<Boolean?> = audioPlayer.isPlaying
     val currentPosition: LiveData<Int> = audioPlayer.currentPosition
@@ -25,12 +29,9 @@ class PlayScreenViewModel (
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
 
     private var isPlayerInitialized = false
-    private val originalPlaylist = listOf (
-        R.raw.music0,
-        R.raw.music1,
-        R.raw.music2
-    )
-    var currentPlaylist by mutableStateOf(originalPlaylist)
+    private val originalPlaylist = emptyList<SongItem>()
+    var currentPlaylist by mutableStateOf<List<SongItem>>(emptyList())
+
     var currentTrackIndex by mutableStateOf(0)
 
     private val _shuffleOn = MutableLiveData(false)
@@ -80,8 +81,18 @@ class PlayScreenViewModel (
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
-        audioPlayer.play(currentPlaylist[index])
-        isPlayerInitialized = true
+        val song = currentPlaylist[index]
+        var storageRef = FirebaseStorage.getInstance().getReference(song.Path?:"")
+
+        storageRef.downloadUrl
+            .addOnSuccessListener { uri ->
+                audioPlayer.play(uri)
+                isPlayerInitialized = true
+            }
+            .addOnFailureListener {
+                // handle error (toast / log)
+            }
+
     }
     // To get timing for slider
     fun onSeek(newPosition: Float){
@@ -137,5 +148,30 @@ class PlayScreenViewModel (
         } finally {
             retriever.release()
         }
+    }
+
+    fun changePlaylist(newList: List<SongItem>,newIdx:Int){
+        currentPlaylist=newList
+        currentTrackIndex=newIdx
+        onSeek(0f)
+        playCurrentTrack()
+
+    }
+}
+
+class PlayScreenViewModelFactory(
+    private val application: Application,
+    private val audioPlayerService: AudioPlayerService
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PlayScreenViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PlayScreenViewModel(
+                application = application,
+                audioPlayer = audioPlayerService
+            ) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
