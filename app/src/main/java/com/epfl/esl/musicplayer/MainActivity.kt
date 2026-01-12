@@ -180,8 +180,6 @@ class MainActivity : ComponentActivity() {
                                         imageUri = loginInfo.imageUri
                                         userKey = loginInfo.userKey
 
-
-
                                         if (imageUri == null ||username == "") { // Modifiable si on veut autoriser la connexion sans image
                                             Toast.makeText(
                                                 context, "Pick an image and a username!",
@@ -206,7 +204,17 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("home") {
-                                HomeScreen(onPlayerClicked = { })
+                                HomeScreen(
+                                    onPlayerClicked = { },
+                                    onLogoutClicked = {
+                                        shouldShowBottomMenu = false
+                                        navController.navigate("login") {
+                                            popUpTo(navController.graph.id) {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+                                )
                             }
                             composable("player") {
                                 PlayScreen()

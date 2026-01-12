@@ -7,6 +7,7 @@ import android.graphics.PointF.length
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 import java.io.ByteArrayOutputStream
 
@@ -85,6 +88,30 @@ class LoginProfileViewModel : ViewModel(){
         }
 
         return false
+    }
+
+    suspend fun isUsernameAvailable(): Boolean {
+        val usernameToCheck = _username.value?.trim()
+        if (usernameToCheck.isNullOrEmpty()) return false
+
+        return suspendCancellableCoroutine { cont ->
+            val query = profileRef
+                .orderByChild("username")
+                .equalTo(usernameToCheck)
+
+            query.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (cont.isActive) {
+                        // available if no matching username exists
+                        cont.resume(!snapshot.exists())
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    if (cont.isActive) cont.resume(false)
+                }
+            })
+        }
     }
 
 
