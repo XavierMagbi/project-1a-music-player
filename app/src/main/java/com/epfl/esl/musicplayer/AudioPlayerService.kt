@@ -1,7 +1,9 @@
 package com.epfl.esl.musicplayer
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
+import android.net.Uri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
@@ -29,14 +31,64 @@ class AudioPlayerService (
     val duration: LiveData<Int>
         get() = _duration
 
-    fun play(musicResId: Int){
-        mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
-        mediaPlayer?.start()
-        _isPlaying.value = true
-        startUpdatingProgress()
+    private val _title = MutableLiveData<String>("")
+    val title: LiveData<String>
+        get() = _title
 
-        _duration.value = mediaPlayer?.duration ?: 0
+    private val _cover = MutableLiveData<ByteArray?>(null)
+    val cover: LiveData<ByteArray?>
+        get() = _cover
+
+
+    var onCompletionListener: (() -> Unit)? = null
+
+    fun play(uri: Uri) {
+        // Stop & release previous MediaPlayer
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                it.stop()
+            }
+            it.release()
+        }
+        mediaPlayer = null
+
+        // ---- METADATA EXTRACTION ----
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+
+            val metaTitle =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            _title.value = metaTitle ?: "Unknown"
+
+            val metaCover = retriever.embeddedPicture
+            _cover.value = metaCover
+
+        } catch (e: Exception) {
+            _title.value = "Error reading metadata"
+            _cover.value = null
+        } finally {
+            retriever.release()
+        }
+
+        // ---- PLAYBACK ----
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(context, uri)
+            setOnPreparedListener {
+                it.start()
+                _isPlaying.value = true
+                _duration.value = it.duration
+                startUpdatingProgress()
+            }
+            setOnCompletionListener {
+                _isPlaying.value = false
+                stopUpdatingProgress()
+                onCompletionListener?.invoke()
+            }
+            prepareAsync() // IMPORTANT for remote files
+        }
     }
+
 
     fun pause(){
         mediaPlayer?.pause()

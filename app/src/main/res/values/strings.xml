@@ -2,6 +2,13 @@
     <string name="app_name">MusicPlayer</string>
     <string name="about_navigation_drawer_item_text">About\n</string>
     <string name="about_icon_description">about icon\n</string>
+    <string name="menu_icon_content_description">Menu Icon</string>
+    <string name="my_history_content_description">History Icon</string>
+    <string name="my_history_navigation_label">History\n</string>
+    <string name="home_content_description">Home screen</string>
+    <string name="home_navigation_label">Home</string>
+    <string name="player_content_description">Player screen</string>
+    <string name="palyer_navigation_label">Music\n</string>
     <string name="default_user_image">user_image\n</string>
     <string name="username_hint">username</string>
     <string name="email_hint">email</string>
@@ -19,8 +26,6 @@
     <string name="cycling_activity_content_description">cycling</string>
     <string name="skiing_activity_content_description">skiing</string>
     <string name="climbing_activity_content_description">climbing</string>
-    <string name="my_history_navigation_label">My History</string>
-    <string name="my_history_content_description">MyHistory icon</string>
     <string name="new_recording_content_description">NewRecording icon</string>
     <string name="new_recording_navigation_label">New Recording</string>
     <string name="exercise_live_content_description">ExerciseLive icon</string>
@@ -28,15 +33,16 @@
     <string name="esl_logo_content_description">ESL logo</string>
     <string name="about_text">This app is provided for the Android course!</string>
     <string name="esl_icon_content_description">ESL icon</string>
-    <string name="menu_icon_content_description">Menu icon</string>
     <string name="sign_up_button_text">SIGN UP</string>
     <string name="sign_in_button_text">SIGN IN</string>
-    <string name="home_content_description">Home screen</string>
-    <string name="home_navigation_label">Home</string>
-    <string name="player_content_description">Player screen</string>
     <string name="player_navigation_label">Music\n</string>
-
-
+    <string name="heart_rate">Heart Rate</string>
+    <string name="my_playlist_text">My Playlists</string>
+    <string name="playlists_content_description">playlists nav icon\n</string>
+    <string name="playlists_navigation_label">My Playlists</string>
+    <string name="discover_content_description">discover music icon\n</string>
+    <string name="discover_navigation_label">Discover</string>
+    <string name="discover_text">Discover Music</string>
 </resources>
 
 

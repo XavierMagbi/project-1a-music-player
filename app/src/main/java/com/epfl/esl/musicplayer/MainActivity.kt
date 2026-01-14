@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -22,11 +23,25 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayCircleFilled
+import androidx.compose.material.icons.filled.Radio
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +58,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.Wearable
@@ -50,6 +73,7 @@ import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var dataClient: DataClient
@@ -58,20 +82,26 @@ class MainActivity : ComponentActivity() {
     private var uriString by mutableStateOf("")
     private var userKey by mutableStateOf("")
 
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val audioService = AudioPlayerService(applicationContext)
         enableEdgeToEdge()
 
 
         dataClient = Wearable.getDataClient(this)
         setContent {
+            val playViewModel: PlayScreenViewModel = viewModel(
+                factory = PlayScreenViewModelFactory(
+                    application = application,
+                    audioPlayerService = audioService
+                )
+            )
             MusicPlayerTheme {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBottomMenu by remember { mutableStateOf(false) }
+                var shouldShowBottomMenu by remember { mutableStateOf(true) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -147,6 +177,38 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(getString(R.string.home_navigation_label)) }
                                     )
                                     NavigationBarItem(
+                                        selected = currentRoute == "myplaylists",
+                                        onClick = {
+                                            navController.navigate("myplaylists")
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.MusicNote ,
+                                                contentDescription = getString(
+                                                    R.string.playlists_content_description
+                                                )
+                                            )
+                                        },
+                                        label = { Text(getString(R.string.playlists_navigation_label)) }
+                                    )
+
+                                    NavigationBarItem(
+                                        selected = currentRoute == "discover",
+                                        onClick = {
+                                            navController.navigate("discover")
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.Radio ,
+                                                contentDescription = getString(
+                                                    R.string.discover_content_description
+                                                )
+                                            )
+                                        },
+                                        label = { Text(getString(R.string.discover_navigation_label)) }
+                                    )
+
+                                    NavigationBarItem(
                                         selected = currentRoute == "player",
                                         onClick = {
                                             navController.navigate("player")
@@ -159,15 +221,17 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             )
                                         },
-                                        label = { Text(getString(R.string.player_navigation_label)) }
+                                        label = { Text(getString(R.string.palyer_navigation_label)) }
                                     )
+
+
 
 
                                 }
                             }
                         }
-                    )
-                    { innerPadding ->
+                    ){
+                            innerPadding ->
                         NavHost(navController = navController,
                             startDestination = "login",
                             modifier = Modifier.padding(innerPadding))
@@ -203,7 +267,7 @@ class MainActivity : ComponentActivity() {
                                     dataClient
                                 )
                             }
-                            composable("home") {
+                            composable("home"){
                                 HomeScreen(
                                     onPlayerClicked = { },
                                     onLogoutClicked = {
@@ -216,8 +280,26 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            composable("myplaylists") {
+                                MyPlaylistsScreen(onPlaylistClicked = { playlistName->
+                                    navController.navigate("playlist/${Uri.encode(playlistName)}")
+                                })
+                            }
                             composable("player") {
-                                PlayScreen()
+                                PlayScreen(playScreenViewModel = playViewModel)
+                            }
+                            composable("playlist/{playlistId}")
+                            {backStackEntry->
+                                val playlistId = backStackEntry.arguments?.getString("playlistId")
+                                PlaylistScreen(
+                                    playlistId = playlistId?:"",
+                                    onSongClicked=playViewModel::changePlaylist
+                                    )
+                            }
+
+                            composable("discover")
+                            {
+                                DiscoverScreen(onSongClicked=playViewModel::changePlaylist)
                             }
                         }
 
@@ -227,4 +309,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
