@@ -150,10 +150,12 @@ class PlayScreenViewModel (
     }
 
     fun addToQueue(index: Int) {
-        // Add music right after current track
+        // Add music right after the current track
         val track = originalPlaylist[index]
-        currentPlaylist = currentPlaylist.toMutableList().apply {
-            add(track)
-        }
+        val newPlaylist = currentPlaylist.toMutableList()
+
+        // Insert at position currentTrackIndex + 1 (right after current track)
+        newPlaylist.add(currentTrackIndex + 1, track)
+        currentPlaylist = newPlaylist
     }
 }
