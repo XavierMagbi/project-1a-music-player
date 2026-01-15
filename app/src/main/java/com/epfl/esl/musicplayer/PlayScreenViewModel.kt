@@ -27,7 +27,7 @@ class PlayScreenViewModel (
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
-    private val originalPlaylist = listOf (
+    val originalPlaylist = listOf (
         R.raw.music0,
         R.raw.music1,
         R.raw.music2
@@ -146,6 +146,14 @@ class PlayScreenViewModel (
             Metadata(getTrackName(resId), null) // If error => return file name
         } finally {
             retriever.release()
+        }
+    }
+
+    fun addToQueue(index: Int) {
+        // Add music right after current track
+        val track = originalPlaylist[index]
+        currentPlaylist = currentPlaylist.toMutableList().apply {
+            add(track)
         }
     }
 }

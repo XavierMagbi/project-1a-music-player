@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Card
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material3.LinearProgressIndicator
 
 
@@ -75,6 +76,7 @@ fun PlayScreen(
     val repeatMode by playScreenViewModel.repeatMode.observeAsState(0)
     val currentTrackIndex = playScreenViewModel.currentTrackIndex
     val playlist = playScreenViewModel.currentPlaylist
+    val originalPlaylist = playScreenViewModel.originalPlaylist
 
     // Queue slider state
     var showQueue by remember { mutableStateOf(false) }
@@ -294,9 +296,9 @@ fun PlayScreen(
                     }
 
                     // Music list from current playlist
-                    items(playlist.size) { index ->
+                    items(originalPlaylist.size) { index ->
                         // Extract id
-                        val resId = playlist[index]
+                        val resId = originalPlaylist[index]
                         // Extract metadata
                         val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
                         // Convert form ByteArray to Bitmap
@@ -334,8 +336,17 @@ fun PlayScreen(
                                     .padding(4.dp)
                             )
                             Text(
-                                text = trackName
+                                text = trackName,
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
                             )
+                            IconButton(onClick = { playScreenViewModel.addToQueue(index) }) {
+                                Icon(
+                                    imageVector = Icons.Filled.ArrowCircleRight,
+                                    contentDescription = "Add to queue"
+                                )
+                            }
                         }
                     }
                 }
