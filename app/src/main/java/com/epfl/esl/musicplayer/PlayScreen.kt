@@ -321,8 +321,9 @@ fun PlayScreen(
                                     playScreenViewModel.playCurrentTrack(index)
                                     isPlayerActive = true
                                 }
+                                // Even if music playing comes from add to queue. Music on list still needs highlighting
                                 .background(
-                                    if (currentTrackIndex == index)
+                                    if (currentTrackIndex != -1 && playlist[currentTrackIndex] == resId)
                                         MaterialTheme.colorScheme.surfaceVariant
                                     else
                                         MaterialTheme.colorScheme.background

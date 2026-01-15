@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MusicPlayer</string>
+    <string name="app_name">WristWave</string>
     <string name="about_navigation_drawer_item_text">About\n</string>
     <string name="about_icon_description">about icon\n</string>
     <string name="menu_icon_content_description">Menu Icon</string>
