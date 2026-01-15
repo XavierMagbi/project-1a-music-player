@@ -33,7 +33,7 @@ class PlayScreenViewModel (
         R.raw.music2
     )
     var currentPlaylist by mutableStateOf(originalPlaylist)
-    var currentTrackIndex by mutableStateOf(0)
+    var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
 
     private val _shuffleOn = MutableLiveData(false)
     val shuffleOn: LiveData<Boolean> = _shuffleOn
@@ -65,10 +65,10 @@ class PlayScreenViewModel (
     }
     // Right arrow button
     fun onRightArrowClick() {
-        if (_shuffleOn.value){
-            currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.size
-            playCurrentTrack()
-        } else {
+//        if (_shuffleOn.value){
+//            currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.size
+//            playCurrentTrack()
+//        } else {
             if (_repeatMode.value == 2){ // Repeat one mode
                 audioPlayer.rewind()
             } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
@@ -78,7 +78,7 @@ class PlayScreenViewModel (
                 currentTrackIndex = 0
                 playCurrentTrack()
             }
-        }
+        //}
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {

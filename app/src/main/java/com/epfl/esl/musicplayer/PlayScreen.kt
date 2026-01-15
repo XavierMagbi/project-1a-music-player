@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Card
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -341,7 +342,7 @@ fun PlayScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                if (isPlaying == true) {
+                if (currentTrackIndex != -1) { // Card to be visible only once a music has been picked
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -367,7 +368,22 @@ fun PlayScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 maxLines = 1
                             )
+                            IconButton(onClick = { playScreenViewModel.onPlayPauseClick() }) {
+                                Icon(
+                                    imageVector = if (isPlaying == true) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = "Play/Pause on card"
+                                )
+                            }
                         }
+
+                        // Time indicator
+                        LinearProgressIndicator(
+                            progress = {
+                                if (duration > 0) currentPosition.toFloat() / duration.toFloat()
+                                else 0f
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
