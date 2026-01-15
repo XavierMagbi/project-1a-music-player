@@ -65,20 +65,15 @@ class PlayScreenViewModel (
     }
     // Right arrow button
     fun onRightArrowClick() {
-//        if (_shuffleOn.value){
-//            currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.size
-//            playCurrentTrack()
-//        } else {
-            if (_repeatMode.value == 2){ // Repeat one mode
-                audioPlayer.rewind()
-            } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
-                currentTrackIndex++
-                playCurrentTrack()
-            } else if (_repeatMode.value == 1) { // End of playlist but with repeat mode on
-                currentTrackIndex = 0
-                playCurrentTrack()
-            }
-        //}
+        if (_repeatMode.value == 2){ // Repeat one mode
+            audioPlayer.rewind()
+        } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
+            currentTrackIndex++
+            playCurrentTrack()
+        } else if (_repeatMode.value == 1) { // End of playlist but with repeat mode on
+            currentTrackIndex = 0
+            playCurrentTrack()
+        }
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
@@ -109,9 +104,15 @@ class PlayScreenViewModel (
 
         if (_shuffleOn.value) {
             // Activate shuffle
-            currentPlaylist = originalPlaylist.shuffled()
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val shuffled = originalPlaylist.shuffled().toMutableList()
+            shuffled.remove(currentTrack)  // Removes currentTrack
+            shuffled.add(0, currentTrack)  // Add currentTrack at position 0
+            currentPlaylist = shuffled
+            currentTrackIndex = 0  // Current index is reset to 0
         } else {
             // Deactivate shuffle
+            currentTrackIndex = originalPlaylist.indexOf(currentPlaylist[currentTrackIndex])
             currentPlaylist = originalPlaylist
         }
     }
