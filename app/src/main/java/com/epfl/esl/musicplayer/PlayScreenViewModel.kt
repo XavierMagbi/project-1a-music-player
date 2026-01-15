@@ -68,9 +68,31 @@ class PlayScreenViewModel (
         if (_repeatMode.value == 2){ // Repeat one mode
             audioPlayer.rewind()
         } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
-            currentTrackIndex++
+            // Check if now-finished music is already present within playlist
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val existsBeforeCurrent = currentPlaylist.subList(0, currentTrackIndex).contains(currentTrack)
+
+            // If does exist => Music was added to queue hence need to delete from currentPlaylist
+            if (existsBeforeCurrent) {
+                currentPlaylist = currentPlaylist.toMutableList().apply {
+                    removeAt(currentTrackIndex)
+                }
+            } else { // Was not a queue-added music => Keep going normally
+                currentTrackIndex++
+            }
             playCurrentTrack()
         } else if (_repeatMode.value == 1) { // End of playlist but with repeat mode on
+            // Check if now-finished music is already present within playlist
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val existsBeforeCurrent = currentPlaylist.subList(0, currentTrackIndex).contains(currentTrack)
+
+            // If does exist => Music was added to queue hence need to delete from currentPlaylist
+            if (existsBeforeCurrent) {
+                currentPlaylist = currentPlaylist.toMutableList().apply {
+                    removeAt(currentTrackIndex)
+                }
+            }
+
             currentTrackIndex = 0
             playCurrentTrack()
         }
