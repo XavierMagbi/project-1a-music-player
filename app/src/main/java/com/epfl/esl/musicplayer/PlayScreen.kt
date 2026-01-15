@@ -411,9 +411,11 @@ fun PlayScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(playlist.size) { index ->
+                        items(playlist.size - currentTrackIndex - 1) { index ->
+                            // Queue index
+                            val queueIndex = index + currentTrackIndex + 1
                             // Extract id
-                            val resId = playlist[index]
+                            val resId = playlist[queueIndex]
                             // Extract metadata
                             val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
                             // Convert form ByteArray to Bitmap
