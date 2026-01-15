@@ -295,10 +295,22 @@ fun PlayScreen(
                         )
                     }
 
+                    // Filter the list based on searchQuery
+                    val filteredPlaylist = if (searchQuery.isEmpty()) {
+                        originalPlaylist
+                    } else {
+                        // For all musics in origanPlaylist fetch the name and check if it contains searchQuery (whatever case)
+                        // StartsWith type search
+                        originalPlaylist.filter { resId ->
+                            val (trackName, _) = playScreenViewModel.getTrackMetadata(resId)
+                            trackName.lowercase().startsWith(searchQuery.lowercase())
+                        }
+                    }
+
                     // Music list from current playlist
-                    items(originalPlaylist.size) { index ->
+                    items(filteredPlaylist.size) { index ->
                         // Extract id
-                        val resId = originalPlaylist[index]
+                        val resId = filteredPlaylist[index]
                         // Extract metadata
                         val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
                         // Convert form ByteArray to Bitmap
