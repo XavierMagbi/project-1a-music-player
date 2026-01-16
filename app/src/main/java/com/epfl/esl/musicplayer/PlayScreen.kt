@@ -1,6 +1,7 @@
 package com.epfl.esl.musicplayer
 
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +59,7 @@ import androidx.compose.material3.Card
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.platform.LocalContext
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +68,7 @@ fun PlayScreen(
     modifier: Modifier = Modifier,
     playScreenViewModel: PlayScreenViewModel = viewModel()
 ) {
+    val context = LocalContext.current
 
     val isPlaying by playScreenViewModel.isPlaying.observeAsState(initial = false)
     val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
@@ -299,7 +302,7 @@ fun PlayScreen(
                     val filteredPlaylist = if (searchQuery.isEmpty()) {
                         originalPlaylist
                     } else {
-                        // For all musics in origanPlaylist fetch the name and check if it contains searchQuery (whatever case)
+                        // For all musics in originalPlaylist fetch the name and check if it contains searchQuery (whatever case)
                         // StartsWith type search
                         originalPlaylist.filter { resId ->
                             val (trackName, _) = playScreenViewModel.getTrackMetadata(resId)
@@ -354,7 +357,10 @@ fun PlayScreen(
                                 maxLines = 1,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { playScreenViewModel.addToQueue(index) }) {
+                            IconButton(onClick = {
+                                playScreenViewModel.addToQueue(index)
+                                Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+                            }) {
                                 Icon(
                                     imageVector = Icons.Filled.ArrowCircleRight,
                                     contentDescription = "Add to queue"
