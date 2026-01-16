@@ -197,25 +197,9 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(getString(R.string.discover_navigation_label)) }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute == "player",
+                                        selected = currentRoute == "music",
                                         onClick = {
-                                            navController.navigate("player")
-                                        },
-                                        icon = {
-                                            Icon(
-                                                imageVector = Icons.Filled.PlayCircleFilled,
-                                                contentDescription = getString(
-                                                    R.string.player_content_description
-                                                ),
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        },
-                                        label = { Text(getString(R.string.palyer_navigation_label)) }
-                                    )
-                                    NavigationBarItem(
-                                        selected = currentRoute == "playlists",
-                                        onClick = {
-                                            navController.navigate("playlists")
+                                            navController.navigate("music")
                                         },
                                         icon = {
                                             Icon(
@@ -270,9 +254,6 @@ class MainActivity : ComponentActivity() {
                                     currentUsername = username
                                 )
                             }
-                            composable("player") {
-                                PlayScreen(playScreenViewModel = playScreenViewModel)
-                            }
                             composable("equalizer") {
                                 val audioSessionId by playScreenViewModel.audioSessionId.observeAsState(0)
                                 EqualizerScreen(
@@ -280,13 +261,14 @@ class MainActivity : ComponentActivity() {
                                     audioSessionId = audioSessionId ?: 0
                                 )
                             }
-                            composable("playlists") {
-                                PlaylistScreen(
-                                    currentUsername = username
-                                )
-                            }
                             composable("discover") {
                                 DiscoverScreen()
+                            }
+                            composable("music") {
+                                MusicScreen(
+                                    currentUsername = username,
+                                    playScreenViewModel = playScreenViewModel
+                                )
                             }
                         }
 
