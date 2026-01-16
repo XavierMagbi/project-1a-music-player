@@ -137,7 +137,7 @@ class LoginScreenViewModel : ViewModel(){
         uploadProfileImage.addOnFailureListener {
             _uploadSuccess.value = false
         }.addOnSuccessListener { taskSnapshot ->
-            profileRef.child(key).child("photo URL").setValue(
+            profileRef.child(key).child("photo_URL").setValue(
                 (FirebaseStorage.getInstance()
                     .getReference()).toString() + "ProfileImages/" + username.value
                         + ".jpg")
