@@ -32,6 +32,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.IconButton
 import com.google.firebase.storage.FirebaseStorage
 import androidx.compose.runtime.LaunchedEffect
 
@@ -109,7 +111,17 @@ fun HomeScreen(
                                 .padding(end = 8.dp)
                         )
                     }
-                    Text(foundUsers[index].username)
+                    Text(foundUsers[index].username,
+                        modifier = Modifier.weight(1f)) // To push add button to right of screen
+
+                    IconButton(onClick = {
+
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add friend"
+                        )
+                    }
                 }
             }
         }

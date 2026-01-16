@@ -6,8 +6,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -29,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -39,9 +36,7 @@ import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -81,7 +76,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBottomMenu by remember { mutableStateOf(true) }
+                var shouldShowBars by remember { mutableStateOf(false) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -98,7 +93,7 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     scope.launch {
                                         drawerState.close()
-                                        shouldShowBottomMenu = false
+                                        shouldShowBars = false
                                         navController.navigate("login") {
                                             popUpTo(navController.graph.id) {
                                                 inclusive = true
@@ -114,37 +109,39 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            TopAppBar(
-                                navigationIcon = {
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            drawerState.open()
-                                        }
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Menu,
-                                            contentDescription = getString(
-                                                R.string.menu_icon_content_description
+                            if (shouldShowBars) {
+                                TopAppBar(
+                                    navigationIcon = {
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                drawerState.open()
+                                            }
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Menu,
+                                                contentDescription = getString(
+                                                    R.string.menu_icon_content_description
+                                                )
                                             )
+                                        }
+                                    },
+                                    title = {
+                                        Text(text = stringResource(id = R.string.app_name))
+                                    },
+                                    actions = {
+                                        AsyncImage(
+                                            model = imageUri,
+                                            contentDescription = "Profile picture",
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .padding(end = 8.dp)
                                         )
                                     }
-                                },
-                                title = {
-                                    Text(text = stringResource(id = R.string.app_name))
-                                },
-                                actions = {
-                                    AsyncImage(
-                                        model = imageUri,
-                                        contentDescription = "Profile picture",
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .padding(end = 8.dp)
-                                    )
-                                }
-                            )
+                                )
+                            }
                         },
                         bottomBar = {
-                            if (shouldShowBottomMenu) {
+                            if (shouldShowBars) {
                                 NavigationBar {
                                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                                     val currentRoute = navBackStackEntry?.destination?.route
@@ -156,7 +153,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                         icon = {
                                             Icon(
-                                                imageVector = Icons.Filled.Home ,
+                                                imageVector = Icons.Filled.Home,
                                                 contentDescription = getString(
                                                     R.string.home_content_description
                                                 ),
@@ -172,7 +169,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                         icon = {
                                             Icon(
-                                                imageVector = Icons.Filled.Tune ,
+                                                imageVector = Icons.Filled.Tune,
                                                 contentDescription = getString(
                                                     R.string.equalizer_content_description
                                                 ),
@@ -188,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                         icon = {
                                             Icon(
-                                                imageVector = Icons.Filled.PlayCircleFilled ,
+                                                imageVector = Icons.Filled.PlayCircleFilled,
                                                 contentDescription = getString(
                                                     R.string.player_content_description
                                                 ),
@@ -197,8 +194,6 @@ class MainActivity : ComponentActivity() {
                                         },
                                         label = { Text(getString(R.string.palyer_navigation_label)) }
                                     )
-
-
                                 }
                             }
                         }
@@ -226,7 +221,7 @@ class MainActivity : ComponentActivity() {
                                                 imageUri.toString(),
                                                 StandardCharsets.UTF_8.toString()
                                             )
-                                            shouldShowBottomMenu = true
+                                            shouldShowBars = true
                                             navController.navigate("home") {
                                                 popUpTo(navController.graph.id) {
                                                     inclusive = true
