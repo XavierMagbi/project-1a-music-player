@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material.icons.filled.Tune
@@ -47,6 +48,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.Wearable
@@ -87,22 +89,21 @@ class MainActivity : ComponentActivity() {
                         ModalDrawerSheet {
                             NavigationDrawerItem(
                                 label = {
-                                    Text(text = getString(R.string.about_navigation_drawer_item_text))
+                                    Text("Log Out")
                                 },
                                 icon = {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                        contentDescription = getString(
-                                            R.string.about_icon_description
-                                        ),
-                                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-                                    )
+                                    Icon(Icons.Default.Logout, contentDescription = null)
                                 },
                                 selected = false,
                                 onClick = {
                                     scope.launch {
-                                        //navController.navigate("about")
                                         drawerState.close()
+                                        shouldShowBottomMenu = false
+                                        navController.navigate("login") {
+                                            popUpTo(navController.graph.id) {
+                                                inclusive = true
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier.padding(top = 16.dp)
@@ -114,9 +115,6 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         topBar = {
                             TopAppBar(
-                                title = {
-                                    Text(text = stringResource(id = R.string.app_name))
-                                },
                                 navigationIcon = {
                                     IconButton(onClick = {
                                         scope.launch {
@@ -130,6 +128,18 @@ class MainActivity : ComponentActivity() {
                                             )
                                         )
                                     }
+                                },
+                                title = {
+                                    Text(text = stringResource(id = R.string.app_name))
+                                },
+                                actions = {
+                                    AsyncImage(
+                                        model = imageUri,
+                                        contentDescription = "Profile picture",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .padding(end = 8.dp)
+                                    )
                                 }
                             )
                         },
@@ -229,15 +239,6 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("home") {
                                 HomeScreen(
-                                    onPlayerClicked = { },
-                                    onLogoutClicked = {
-                                        shouldShowBottomMenu = false
-                                        navController.navigate("login") {
-                                            popUpTo(navController.graph.id) {
-                                                inclusive = true
-                                            }
-                                        }
-                                    }
                                 )
                             }
                             composable("player") {

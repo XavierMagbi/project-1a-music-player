@@ -15,8 +15,6 @@ import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun HomeScreen(
-    onPlayerClicked: () -> Unit,
-    onLogoutClicked: () -> Unit,
     modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -25,12 +23,7 @@ fun HomeScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(onClick=onPlayerClicked){
-                Text("Play")
-            }
-            Button(onClick = onLogoutClicked) {
-                Text("Log Out")
-            }
+            Text("Welcome to WristWave!")
         }
     }
 
@@ -39,7 +32,7 @@ fun HomeScreen(
 @Preview
 @Composable
 private fun HomeScreenPreview() {
-    HomeScreen({},{})
+    HomeScreen()
 
 }
 

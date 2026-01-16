@@ -80,7 +80,6 @@ class LoginScreenViewModel : ViewModel(){
         if(password.isLongEnough() && password.hasEnoughDigits() && password.isMixedCase() && password.hasSpecialChar()){
             return true;
         }
-
         return false
     }
 
