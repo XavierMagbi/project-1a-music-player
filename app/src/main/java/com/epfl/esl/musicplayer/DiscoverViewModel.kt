@@ -6,12 +6,15 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
+import java.net.URLDecoder
 
 data class musicMetadata (
     val title: String? = "",
-    val image: ByteArray? = null
+    val image: ByteArray? = null,
+    val link: String? = ""
 )
 
 class DiscoverViewModel: ViewModel() {
@@ -25,8 +28,15 @@ class DiscoverViewModel: ViewModel() {
     private val _filteredSongs = MutableLiveData<List<musicMetadata>>(emptyList())
     val filteredSongs: LiveData<List<musicMetadata>> = _filteredSongs
 
+    // For dialog
+    private val playlistRef = FirebaseDatabase.getInstance().getReference("Playlists")
+
+    private val _playlists = MutableLiveData<List<playlistMetadata>>(emptyList())
+    val playlists: LiveData<List<playlistMetadata>> = _playlists
+
     init {
         loadSongs()
+        loadPlaylists()
     }
 
     fun loadSongs() {
@@ -36,6 +46,8 @@ class DiscoverViewModel: ViewModel() {
             val songList = mutableListOf<musicMetadata>()
 
             listResult.items.forEach { fileRef ->
+                val link = URLDecoder.decode(fileRef.toString(), "UTF-8") // Otherwise spaces are "%20"
+
                 fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener { bytes ->
                     try {
                         val tempFile = File.createTempFile("song", ".mp3")
@@ -49,21 +61,21 @@ class DiscoverViewModel: ViewModel() {
                         val coverImage = retriever.embeddedPicture
                         retriever.release()
 
-                        songList.add(musicMetadata(title, coverImage))
+                        songList.add(musicMetadata(title, coverImage, link))
                         _songs.value = songList.toList()
 
-                        // So we do not need an inital query at start
                         filterSongs(_searchQuery.value ?: "")
 
                         tempFile.delete()
                     } catch (e: Exception) {
                         Log.e("DiscoverViewModel", "Error: ${e.message}")
-                        songList.add(musicMetadata(fileRef.name.replace(".mp3", ""), null))
+                        songList.add(musicMetadata(fileRef.name.replace(".mp3", ""), null, link))
                         _songs.value = songList.toList()
 
-                        // So we do not need an inital query at start
                         filterSongs(_searchQuery.value ?: "")
                     }
+                }.addOnFailureListener {
+                    Log.e("DiscoverViewModel", "Error getting download URL: ${it.message}")
                 }
             }
         }
@@ -83,5 +95,31 @@ class DiscoverViewModel: ViewModel() {
             } ?: emptyList()
         }
         _filteredSongs.value = filtered
+    }
+
+    fun loadPlaylists() {
+        playlistRef.get().addOnSuccessListener { snapshot ->
+            val results = mutableListOf<playlistMetadata>()
+
+            snapshot.children.forEach { child ->
+                val playlistName = child.child("name").getValue(String::class.java)
+                val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
+                val id = child.key ?: ""
+
+                results.add(playlistMetadata(playlistName, playlistCreator, id))
+            }
+
+            _playlists.value = results
+        }
+    }
+
+    fun addSongToPlaylist(playlistId:String, songId:String){
+        playlistRef.child(playlistId).get().addOnSuccessListener { snapshot ->
+            val currentTracks = snapshot.child("tracks").value as? List<String> ?: emptyList()
+            val updatedTracks = currentTracks.toMutableList()
+            updatedTracks.add(songId)
+
+            playlistRef.child(playlistId).child("tracks").setValue(updatedTracks)
+        }
     }
 }

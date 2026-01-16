@@ -8,7 +8,8 @@ import com.google.firebase.database.FirebaseDatabase
 
 data class playlistMetadata (
     val title: String? = "",
-    val creator: String? = ""
+    val creator: String? = "",
+    val id: String? = ""
 )
 
 class PlaylistViewModel (
@@ -23,15 +24,16 @@ class PlaylistViewModel (
         loadPlaylists()
     }
 
-    private fun loadPlaylists() {
+    fun loadPlaylists() {
         playlistRef.get().addOnSuccessListener { snapshot ->
             val results = mutableListOf<playlistMetadata>()
 
             snapshot.children.forEach { child ->
                 val playlistName = child.child("name").getValue(String::class.java)
                 val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
+                val id = child.key ?: ""
 
-                results.add(playlistMetadata(playlistName, playlistCreator))
+                results.add(playlistMetadata(playlistName, playlistCreator, id))
             }
 
             _playlists.value = results
@@ -50,4 +52,14 @@ class PlaylistViewModel (
             loadPlaylists()
         }
     }
+
+    fun deletePlaylist(playlistId: String) {
+        if (playlistId.isBlank()) return
+
+        playlistRef.child(playlistId).removeValue().addOnSuccessListener {
+            loadPlaylists()
+        }
+
+    }
+
 }

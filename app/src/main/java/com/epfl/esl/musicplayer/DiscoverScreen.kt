@@ -43,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.LaunchedEffect
 import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.asImageBitmap
@@ -58,12 +59,15 @@ fun DiscoverScreen(
     val searchQuery by discoverViewModel.searchQuery.observeAsState("")
     val filteredSongs by discoverViewModel.filteredSongs.observeAsState(emptyList())
 
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedSongLink by remember { mutableStateOf("") }
+
+    val playlists by discoverViewModel.playlists.observeAsState(emptyList())
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        var songs by remember { mutableStateOf<List<musicMetadata>>(emptyList()) }
-
         LazyColumn() {
             item {
                 Text(
@@ -122,8 +126,90 @@ fun DiscoverScreen(
                         text = filteredSongs[index].title ?: "Unknown title",
                         modifier = Modifier.weight(1f)
                     )
+
+                    IconButton(
+                        onClick = {
+                            showDialog = true
+                            selectedSongLink = filteredSongs[index].link ?: "Unknown link"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add to playlist",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                 }
             }
         }
+        if(showDialog){
+            AddSongToPlaylistDialog(
+                playlists = playlists,
+                onAdd = {playlistId->
+                    discoverViewModel.addSongToPlaylist(
+                        playlistId = playlistId,
+                        songId = selectedSongLink
+                    )
+                    showDialog=false
+                },
+                onCancel = {showDialog=false})
+        }
     }
+}
+
+//composable to add song to a playlist
+@Composable
+fun AddSongToPlaylistDialog(
+    playlists: List<playlistMetadata>,
+    onAdd: (String) -> Unit,      // playlistId
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedPlaylistId by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onCancel,
+        title = { Text("Add to playlist") },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp) // max height for scrolling
+            ) {
+                LazyColumn {
+                    items(playlists) { playlist ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPlaylistId = playlist.id }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedPlaylistId == playlist.id,
+                                onClick = { selectedPlaylistId = playlist.id }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = playlist.title?:"")
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = selectedPlaylistId != null,
+                onClick = { selectedPlaylistId?.let { onAdd(it) } }
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
 }
