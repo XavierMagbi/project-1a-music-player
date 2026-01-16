@@ -70,4 +70,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0-rc02")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0-rc02")
     implementation("co.yml:ycharts:2.1.0")
+    implementation("com.google.firebase:firebase-storage-ktx")// Firebase Cloud Storage
+    implementation("com.google.firebase:firebase-database-ktx")//  Realtime Database
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+
 }
