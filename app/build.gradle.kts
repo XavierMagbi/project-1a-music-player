@@ -73,4 +73,5 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")// Firebase Cloud Storage
     implementation("com.google.firebase:firebase-database-ktx")//  Realtime Database
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+    implementation ("com.google.firebase:firebase-auth-ktx") // For current user info retrieval
 }

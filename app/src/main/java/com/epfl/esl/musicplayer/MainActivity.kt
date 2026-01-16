@@ -234,6 +234,7 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("home") {
                                 HomeScreen(
+                                    currentUsername = username
                                 )
                             }
                             composable("player") {

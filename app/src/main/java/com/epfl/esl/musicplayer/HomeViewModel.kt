@@ -1,11 +1,13 @@
 package com.epfl.esl.musicplayer
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.auth.FirebaseAuth
 
 data class UserProfile(
     val username: String,
@@ -18,6 +20,7 @@ class HomeScreenViewModel:ViewModel() {
     private val storage = FirebaseStorage.getInstance()
     private val usersRef = dataBase.getReference("Profiles")
     private val imageRef = storage.getReference("ProfileImages")
+    private val auth = FirebaseAuth.getInstance()
 
     // For search query
     private val _foundUsers = MutableLiveData<List<UserProfile>>(emptyList())
@@ -46,6 +49,33 @@ class HomeScreenViewModel:ViewModel() {
             _foundUsers.value = results
         }.addOnFailureListener {
             _foundUsers.value = emptyList()
+        }
+    }
+
+    fun addFriend(pressedUsername: String, currentUsername: String){
+        // Fetches profiles from database
+        usersRef.get().addOnSuccessListener { snapshot ->
+            var currentUserUid: String? = null
+            var pressedUserUid: String? = null
+
+            // Find UID linked to current user and targeted friend
+            snapshot.children.forEach { child ->
+                val username = child.child("username").getValue(String::class.java)
+                val uid = child.key
+
+                if (username == currentUsername) {
+                    currentUserUid = uid
+                }
+                if (username == pressedUsername) {
+                    pressedUserUid = uid
+                }
+            }
+
+            // Add friend UID
+            usersRef.child(currentUserUid!!).child("Friends").child(pressedUserUid!!).setValue(true)
+
+        }.addOnFailureListener { error ->
+            Log.e("AddFriend", "Error: ${error.message}")
         }
     }
 }

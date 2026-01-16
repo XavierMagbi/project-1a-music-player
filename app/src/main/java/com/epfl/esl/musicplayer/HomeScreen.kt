@@ -32,16 +32,21 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.IconButton
 import com.google.firebase.storage.FirebaseStorage
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    homeScreenViewModel: HomeScreenViewModel = viewModel()
+    homeScreenViewModel: HomeScreenViewModel = viewModel(),
+    currentUsername: String = ""
 ) {
+    val context = LocalContext.current
     val foundUsers by homeScreenViewModel.foundUsers.observeAsState(emptyList())
 
     Surface(
@@ -115,7 +120,10 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f)) // To push add button to right of screen
 
                     IconButton(onClick = {
-
+                        homeScreenViewModel.addFriend(
+                            pressedUsername = foundUsers[index].username,
+                            currentUsername = currentUsername)
+                        Toast.makeText(context, "Added friend", Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(
                             imageVector = Icons.Filled.Add,
