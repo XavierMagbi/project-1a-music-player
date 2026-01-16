@@ -1,6 +1,7 @@
 package com.epfl.esl.musicplayer
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,7 +12,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 data class UserProfile(
     val username: String,
-    val picturePath: String
+    val image: Bitmap? = null
 )
 
 class HomeScreenViewModel:ViewModel() {
@@ -42,7 +43,18 @@ class HomeScreenViewModel:ViewModel() {
 
                 // If username matches query then save this into new list
                 if (username != null && username.lowercase().startsWith(query.lowercase())) {
-                    results.add(UserProfile(username, picturePath))
+                    // ✅ FETCH BITMAP ICI
+                    val filePath = picturePath.replace("gs://muzikproject1a.firebasestorage.app/", "")
+                    storage.reference.child(filePath).getBytes(Long.MAX_VALUE)
+                        .addOnSuccessListener { bytes ->
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            results.add(UserProfile(username, bitmap))
+                            _foundUsers.value = results.toList()
+                        }
+                        .addOnFailureListener {
+                            results.add(UserProfile(username, null))
+                            _foundUsers.value = results.toList()
+                        }
                 }
             }
 

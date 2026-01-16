@@ -12,7 +12,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayCircleFilled
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,7 +86,7 @@ class MainActivity : ComponentActivity() {
                         ModalDrawerSheet {
                             NavigationDrawerItem(
                                 label = {
-                                    Text("Log Out")
+                                    Text("Sign out")
                                 },
                                 icon = {
                                     Icon(Icons.Default.Logout, contentDescription = null)
@@ -179,6 +181,22 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(getString(R.string.equalizer_navigation_label)) }
                                     )
                                     NavigationBarItem(
+                                        selected = currentRoute == "discover",
+                                        onClick = {
+                                            navController.navigate("discover")
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.Radio,
+                                                contentDescription = getString(
+                                                    R.string.discover_content_description
+                                                ),
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        },
+                                        label = { Text(getString(R.string.discover_navigation_label)) }
+                                    )
+                                    NavigationBarItem(
                                         selected = currentRoute == "player",
                                         onClick = {
                                             navController.navigate("player")
@@ -193,6 +211,21 @@ class MainActivity : ComponentActivity() {
                                             )
                                         },
                                         label = { Text(getString(R.string.palyer_navigation_label)) }
+                                    )
+                                    NavigationBarItem(
+                                        selected = currentRoute == "playlists",
+                                        onClick = {
+                                            navController.navigate("playlists")
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.MusicNote ,
+                                                contentDescription = getString(
+                                                    R.string.playlists_content_description
+                                                )
+                                            )
+                                        },
+                                        label = { Text(getString(R.string.playlists_navigation_label)) }
                                     )
                                 }
                             }
@@ -246,6 +279,14 @@ class MainActivity : ComponentActivity() {
                                     equalizerViewModel = equalizerViewModel,
                                     audioSessionId = audioSessionId ?: 0
                                 )
+                            }
+                            composable("playlists") {
+                                PlaylistScreen(
+                                    currentUsername = username
+                                )
+                            }
+                            composable("discover") {
+                                DiscoverScreen()
                             }
                         }
 

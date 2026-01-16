@@ -85,21 +85,6 @@ fun HomeScreen(
             }
 
             items(foundUsers.size){ index ->
-                var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-
-                //  Fetch image from Firebase Storage
-                LaunchedEffect(foundUsers[index].picturePath) {
-                    val storage = FirebaseStorage.getInstance()
-                    val path = foundUsers[index].picturePath
-
-                    // Firebase requires relative path not complete path
-                    val filePath = path.replace("gs://muzikproject1a.firebasestorage.app/", "")
-                    // Fetch in bytes
-                    storage.reference.child(filePath).getBytes(Long.MAX_VALUE)
-                        .addOnSuccessListener { bytes ->
-                            bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        }
-                }
 
                 Row(
                     modifier = Modifier
@@ -107,9 +92,9 @@ fun HomeScreen(
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ){
-                    if (bitmap != null) { // Once image has been fetched and converted to bitmap
+                    if (foundUsers[index].image != null) { // Once image has been fetched and converted to bitmap
                         Image(
-                            bitmap = bitmap!!.asImageBitmap(),
+                            bitmap = foundUsers[index].image!!.asImageBitmap(),
                             contentDescription = "Profile picture",
                             modifier = Modifier
                                 .size(50.dp)

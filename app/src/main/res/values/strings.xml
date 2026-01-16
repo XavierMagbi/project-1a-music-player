@@ -34,15 +34,15 @@
     <string name="about_text">This app is provided for the Android course!</string>
     <string name="esl_icon_content_description">ESL icon</string>
     <string name="heart_rate">Heart Rate</string>
-    <string name="my_playlist_text">My Playlists</string>
     <string name="equalizer_content_description">Equalizer screen</string>
     <string name="equalizer_navigation_label">Equalizer</string>
     <string name="sign_up_button_text">SIGN UP</string>
     <string name="sign_in_button_text">SIGN IN</string>
     <string name="player_navigation_label">Music\n</string>
-    <string name="playlists_content_description">playlists nav icon\n</string>
-    <string name="playlists_navigation_label">My Playlists</string>
+    <string name="playlists_navigation_label">Playlists</string>
     <string name="discover_content_description">discover music icon\n</string>
     <string name="discover_navigation_label">Discover</string>
-    <string name="discover_text">Discover Music</string>
+    <string name="discover_text">Discover new musics now!</string>
+    <string name="my_playlist_text">Music</string>
+    <string name="playlists_content_description">playlists nav icon\n</string>
 </resources>
