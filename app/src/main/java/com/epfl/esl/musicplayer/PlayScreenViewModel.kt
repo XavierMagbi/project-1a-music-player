@@ -29,6 +29,7 @@ class PlayScreenViewModel (
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
 
     private var isPlayerInitialized = false
+
     private val originalPlaylist = emptyList<SongItem>()
     var currentPlaylist by mutableStateOf<List<SongItem>>(emptyList())
 
