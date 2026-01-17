@@ -14,7 +14,7 @@ fun MusicScreen(
     application: Application,
     modifier: Modifier = Modifier,
     currentUsername: String = "",
-    onSongClicked:(Int,List<Int>)->Unit,
+    onSongClicked:(Int,List<String>)->Unit,
     playScreenViewModel: PlayScreenViewModel = viewModel()
 ) {
     var window by remember{ mutableStateOf<String?>("playlist")}

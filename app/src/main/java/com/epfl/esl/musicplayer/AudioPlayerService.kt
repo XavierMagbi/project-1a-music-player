@@ -47,7 +47,7 @@ class AudioPlayerService (
         get() = _audioSessionId
 
 
-    fun play(musicResId: Int){
+    fun play(musicResId: String){
         // To stop playing the initial song when switching to another one
         mediaPlayer?.let {
             if (it.isPlaying) {
@@ -61,7 +61,8 @@ class AudioPlayerService (
         val retriever = MediaMetadataRetriever()
         try {
             // Get URI
-            val uri = Uri.parse("android.resource://${context.packageName}/$musicResId")
+            //val uri = Uri.parse("android.resource://${context.packageName}/$musicResId")
+            val uri = Uri.parse(musicResId)
             retriever.setDataSource(context, uri)
             // Get title
             val metaTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
@@ -77,7 +78,7 @@ class AudioPlayerService (
         }
 
         // To play the music
-        mediaPlayer = MediaPlayer.create(context, musicResId) // Requires APK hence Context to access musics
+        mediaPlayer = MediaPlayer.create(context, Uri.parse(musicResId)) // Requires APK hence Context to access musics
         // For equalizer
         _audioSessionId.value = mediaPlayer?.audioSessionId
         mediaPlayer?.start()

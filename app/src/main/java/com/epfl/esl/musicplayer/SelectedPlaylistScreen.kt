@@ -3,6 +3,7 @@ package com.epfl.esl.musicplayer
 import android.app.Application
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MusicNote
@@ -39,7 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun SelectedPlaylistScreen(
     application: Application,
     playlistId: String,
-    onSongClicked:(Int,List<Int>)->Unit,
+    onSongClicked:(Int,List<String>)->Unit,
     modifier: Modifier = Modifier
 ) {
     val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application))
@@ -47,6 +49,7 @@ fun SelectedPlaylistScreen(
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
     val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")
+    val newQueue by selectedPlaylistViewModel.newQueue.observeAsState(emptyList())
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -55,11 +58,12 @@ fun SelectedPlaylistScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            /*
             Button(
                 onClick = {
                     onSongClicked(1, listOf(R.raw.music0, R.raw.music1, R.raw.music2))
                 }
-            ) {}
+            ) {}*/
             LazyColumn() {
                 item {
                     Text(
@@ -92,7 +96,8 @@ fun SelectedPlaylistScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(16.dp)
+                            .clickable( onClick = {onSongClicked(index,newQueue)}),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (filteredSongs[index].image != null) {
@@ -119,20 +124,11 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        IconButton(
-                            onClick = {
 
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add to playlist",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
 
                     }
                 }
+
             }
 
 

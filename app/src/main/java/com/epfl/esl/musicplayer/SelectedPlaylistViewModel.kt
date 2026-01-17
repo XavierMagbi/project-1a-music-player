@@ -45,8 +45,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
     private val _filteredSongs = MutableLiveData<List<musicMetadata>>(emptyList())
     val filteredSongs: LiveData<List<musicMetadata>> = _filteredSongs
 
-    private val _newQueue = mutableStateListOf<String>()
-    val newQueue: List<String> get() = _newQueue
+    private val _newQueue = MutableLiveData<List<String>>(emptyList())
+    val newQueue : LiveData<List<String>> = _newQueue
 
 
 
@@ -98,7 +98,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
 
     private fun fetchSongsFromGsPaths(songPaths: List<String>) {
         val songList = mutableListOf<musicMetadata>()
-        _newQueue.clear() // reset the queue for this playlist
+        _newQueue.value= emptyList() // reset the queue for this playlist
 
         if (songPaths.isEmpty()) {
             _songs.value = emptyList()
@@ -133,7 +133,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
                     )
 
                     // Add to playback queue
-                    _newQueue.add(tempFile.absolutePath)
+                    _newQueue.value =_newQueue.value + (tempFile.absolutePath)
 
                     // Update LiveData for UI
                     _songs.value = songList.toList()

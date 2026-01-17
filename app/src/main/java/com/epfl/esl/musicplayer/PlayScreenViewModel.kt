@@ -35,11 +35,7 @@ class PlayScreenViewModel (
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
-    val originalPlaylist = listOf (
-        R.raw.music0,
-        R.raw.music1,
-        R.raw.music2
-    )
+    val originalPlaylist = emptyList<String>()
     var currentPlaylist by mutableStateOf(originalPlaylist)
     var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
 
@@ -155,15 +151,15 @@ class PlayScreenViewModel (
         }
     }
     // In case metadata has no title
-    fun getTrackName(resId: Int): String {
-        return getApplication<Application>().resources.getResourceEntryName(resId)
+    fun getTrackName(path: String): String {
+        return path.substringAfterLast("/").substringBeforeLast(".")
     }
     // For sheet queue
-    fun getTrackMetadata(resId: Int): Metadata {
+    fun getTrackMetadata(resId: String): Metadata {
         val retriever = MediaMetadataRetriever()
         return try {
             // Get URI
-            val uri = android.net.Uri.parse("android.resource://${getApplication<Application>().packageName}/$resId")
+            val uri = android.net.Uri.parse(resId)
             retriever.setDataSource(getApplication(), uri)
             // Extract title
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
@@ -189,7 +185,7 @@ class PlayScreenViewModel (
         currentPlaylist = newPlaylist
     }
 
-    fun changeQueue(queue:List<Int>,idx:Int){
+    fun changeQueue(queue:List<String>,idx:Int){
         currentPlaylist=queue
         currentTrackIndex=idx
         playCurrentTrack()
