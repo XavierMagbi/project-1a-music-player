@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.navigation:navigation-compose:2.7.2")
     implementation(libs.firebase.database)
+    //implementation(libs.androidx.ui.desktop)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,12 +62,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("androidx.compose.material:material-icons-extended") // For extented icons
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4") // For viewmodel arch
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.navigation:navigation-compose:2.7.4")
     implementation("com.google.android.gms:play-services-wearable:18.1.0")
-    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0-rc02")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0-rc02")
     implementation("co.yml:ycharts:2.1.0")

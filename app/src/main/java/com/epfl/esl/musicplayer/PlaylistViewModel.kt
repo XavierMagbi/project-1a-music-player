@@ -1,10 +1,11 @@
 package com.epfl.esl.musicplayer
 
-import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.database.FirebaseDatabase
+import android.app.Application
+
 
 data class playlistMetadata (
     val title: String? = "",
@@ -12,7 +13,7 @@ data class playlistMetadata (
     val id: String? = ""
 )
 
-class PlaylistViewModel (
+class PlaylistViewModel(
     application: Application
 ): AndroidViewModel(application) {
     private val playlistRef = FirebaseDatabase.getInstance().getReference("Playlists")

@@ -132,4 +132,8 @@ class AudioPlayerService (
     private fun stopUpdatingProgress() {
         updateJob?.cancel()
     }
+
+    fun changeQueue(songIdx:Int,newQueue:List<Int>){
+
+    }
 }

@@ -1,13 +1,21 @@
 package com.epfl.esl.musicplayer
 
 import android.app.Application
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 
 data class Metadata(val title: String, val cover: ByteArray?)
 
@@ -180,4 +188,12 @@ class PlayScreenViewModel (
         newPlaylist.add(currentTrackIndex + 1, track)
         currentPlaylist = newPlaylist
     }
+
+    fun changeQueue(queue:List<Int>,idx:Int){
+        currentPlaylist=queue
+        currentTrackIndex=idx
+        playCurrentTrack()
+
+    }
+
 }

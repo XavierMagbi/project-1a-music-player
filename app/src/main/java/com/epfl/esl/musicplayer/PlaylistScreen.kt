@@ -3,6 +3,7 @@ package com.epfl.esl.musicplayer
 import android.media.MediaMetadataRetriever
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +47,7 @@ import java.io.File
 fun PlaylistScreen(
     modifier: Modifier = Modifier,
     playlistViewModel: PlaylistViewModel = viewModel(),
+    onPlaylistClicked:(String)->Unit,
     currentUsername: String = ""
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -73,7 +75,13 @@ fun PlaylistScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(16.dp)
+                                .clickable(onClick = {
+                                    playlists[index].id?.let { id ->
+                                        onPlaylistClicked(id)
+                                    }
+                                })
+                            ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(

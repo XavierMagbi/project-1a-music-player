@@ -1,5 +1,6 @@
 package com.epfl.esl.musicplayer
 
+import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,8 +11,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun MusicScreen(
+    application: Application,
     modifier: Modifier = Modifier,
     currentUsername: String = "",
+    onSongClicked:(Int,List<Int>)->Unit,
     playScreenViewModel: PlayScreenViewModel = viewModel()
 ) {
     var window by remember{ mutableStateOf<String?>("playlist")}
@@ -27,14 +30,13 @@ fun MusicScreen(
             }
         )
     } else if (window == "playscreen"){
-        PlayScreen(
-            modifier = modifier,
-            playlistId = selectedPlaylistId ?: "",
-            onBackClicked = {
-                selectedPlaylistId = null
-                window = "playlist"
-            },
-            playScreenViewModel = playScreenViewModel
-        )
+        selectedPlaylistId?.let { playlistId ->
+            SelectedPlaylistScreen(
+                application = application,
+                playlistId = playlistId,
+                onSongClicked = onSongClicked
+            )
+        }
+
     }
 }
