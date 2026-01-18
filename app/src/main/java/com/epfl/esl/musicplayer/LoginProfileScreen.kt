@@ -1,5 +1,6 @@
 package com.epfl.esl.musicplayer
 
+
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -246,41 +247,41 @@ fun LoginProfileContent(
         }
         OutlinedButton(
             onClick = {
-                    scope.launch {
-                        if (username.isBlank()) {
-                            Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-
-                        if (password.isBlank()) {
-                            Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-
-                        if (!loginProfileViewModel.isPasswordValid(password)) {
-                            Toast.makeText(
-                                context,
-                                "Password must include upper+lower case, a digit, and one of ! , + ^",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            return@launch
-                        }
-
-                        if (imageUri == null) {
-                            Toast.makeText(context, "Pick an image", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-
-                        // Only now call Firebase
-                        val available = loginProfileViewModel.isUsernameAvailable()
-                        if (!available) {
-                            Toast.makeText(context, "Username already exists , please try another one", Toast.LENGTH_LONG)
-                                .show()
-                            return@launch
-                        }
-
-                        onSignUpButtonClicked()
+                scope.launch {
+                    if (username.isBlank()) {
+                        Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
+                        return@launch
                     }
+
+                    if (password.isBlank()) {
+                        Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+
+                    if (!loginProfileViewModel.isPasswordValid(password)) {
+                        Toast.makeText(
+                            context,
+                            "Password must include min. 8 long, upper+lower case, a digit, and one of: ! , + ^",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        return@launch
+                    }
+
+                    if (imageUri == null) {
+                        Toast.makeText(context, "Pick an image", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+
+                    // Only now call Firebase
+                    val available = loginProfileViewModel.isUsernameAvailable()
+                    if (!available) {
+                        Toast.makeText(context, "Username already exists , please try another one", Toast.LENGTH_LONG)
+                            .show()
+                        return@launch
+                    }
+
+                    onSignUpButtonClicked()
+                }
             },
             modifier = modifier
                 .fillMaxWidth()

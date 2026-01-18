@@ -88,20 +88,21 @@ class MainActivity : ComponentActivity() {
         val audioService = AudioPlayerService(applicationContext)
         enableEdgeToEdge()
 
-
         dataClient = Wearable.getDataClient(this)
         setContent {
             val playViewModel: PlayScreenViewModel = viewModel(
                 factory = PlayScreenViewModelFactory(
                     application = application,
-                    audioPlayerService = audioService
+                    audioPlayerService = audioService,
+                    dataClient = dataClient
+
                 )
             )
             MusicPlayerTheme {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBottomMenu by remember { mutableStateOf(true) }
+                var shouldShowBottomMenu by remember { mutableStateOf(false) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -177,9 +178,9 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(getString(R.string.home_navigation_label)) }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute == "myplaylists",
+                                        selected = currentRoute == "my playlists",
                                         onClick = {
-                                            navController.navigate("myplaylists")
+                                            navController.navigate("my playlists")
                                         },
                                         icon = {
                                             Icon(
@@ -250,25 +251,37 @@ class MainActivity : ComponentActivity() {
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         } else {
-
-
+                                            shouldShowBottomMenu = true
                                             uriString = URLEncoder.encode(
                                                 imageUri.toString(),
                                                 StandardCharsets.UTF_8.toString()
                                             )
-                                            shouldShowBottomMenu = true
-                                            navController.navigate("home") {
+                                            navController.navigate("home/$username/${uriString}") {
                                                 popUpTo(navController.graph.id) {
                                                     inclusive = true
                                                 }
                                             }
+
                                         }
                                     },
                                     dataClient
                                 )
                             }
-                            composable("home"){
+                            composable("home/{username}/{imageUriString}") { backStackEntry ->
+                                val username = backStackEntry.arguments?.getString("username") ?: ""
+
+                                val imageUriString =
+                                    backStackEntry.arguments?.getString("imageUriString")
+                                val uri = if (!imageUriString.isNullOrEmpty()) {
+                                    Uri.parse(imageUriString)
+                                } else {
+                                    null
+                                }
+
                                 HomeScreen(
+                                    username,
+                                    uri,
+                                    userKey,
                                     onPlayerClicked = { },
                                     onLogoutClicked = {
                                         shouldShowBottomMenu = false
@@ -280,7 +293,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            composable("myplaylists") {
+                            composable("my playlists") {
                                 MyPlaylistsScreen(onPlaylistClicked = { playlistName->
                                     navController.navigate("playlist/${Uri.encode(playlistName)}")
                                 })

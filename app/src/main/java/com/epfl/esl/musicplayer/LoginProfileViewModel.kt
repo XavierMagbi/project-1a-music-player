@@ -199,9 +199,6 @@ class LoginProfileViewModel : ViewModel(){
 
 
 
-
-
-
     fun fetchProfile() {
         profileRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
