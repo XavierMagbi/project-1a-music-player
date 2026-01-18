@@ -1,94 +1,93 @@
 package com.epfl.esl.musicplayer
 
-import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.auth.FirebaseAuth
 
-val samplePlaylists = listOf(
-    PlaylistItem(name = "Chill Vibes", author = "Spotify"),
-    PlaylistItem(name = "Workout Hits", author = "Nike Training"),
-    PlaylistItem(name = "Late Night Coding", author = "Dev Beats"),
-    PlaylistItem(name = "Morning Acoustic", author = "Indie Folk"),
-    PlaylistItem(name = "Top 50 Global", author = "Charts")
+data class UserProfile(
+    val username: String,
+    val image: Bitmap? = null
 )
 
-class MyPlaylistsViewModel:ViewModel() {
-    private var _playlists = MutableLiveData<List<PlaylistItem>>(listOf())
-    //for initial debug
-    //private var _playlists = MutableLiveData<List<PlaylistItem>>(samplePlaylists)
-    val playlists: LiveData<List<PlaylistItem>>
-        get() = _playlists
+class HomeScreenViewModel:ViewModel() {
+    // Firebase
+    private val dataBase = FirebaseDatabase.getInstance()
+    private val storage = FirebaseStorage.getInstance()
+    private val usersRef = dataBase.getReference("Profiles")
+    private val imageRef = storage.getReference("ProfileImages")
+    private val auth = FirebaseAuth.getInstance()
 
+    // For search query
+    private val _foundUsers = MutableLiveData<List<UserProfile>>(emptyList())
+    val foundUsers: LiveData<List<UserProfile>> = _foundUsers
 
-    val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-    val playlistRef: DatabaseReference = database.getReference("Playlists")
-    var key: String = ""
+    fun searchUsers(query: String) {
+        if (query.isEmpty()) {
+            _foundUsers.value = emptyList()
+            return
+        }
 
-    init {
-        listenForPlaylist()
-    }
+        // Fetches profiles from database and checks if username starts with query
+        usersRef.get().addOnSuccessListener { snapshot ->
+            val results = mutableListOf<UserProfile>()
 
+            snapshot.children.forEach { child ->
+                val username = child.child("username").getValue(String::class.java)
+                val picturePath = child.child("photo_URL").getValue(String::class.java) ?: ""
 
-    //setter function to add a new playlist
-    fun addPlaylist(name: String) {
-        if (name.isBlank()) return
-
-        val newPlaylist = PlaylistItem(
-            name = name, author = "jon"
-        )
-
-        //replace with server call and refresh (or maybe a dedicated refresh button)
-        //val current = _playlists.value ?: emptyList()
-        //_playlists.value = current + newPlaylist
-        addPlaylistToFireBase(name = name, context = null)
-
-    }
-    private fun addPlaylistToFireBase(name:String,context: Context?){
-        key = playlistRef.push().key.toString()
-        val playlist = PlaylistItem(
-            id = key,
-            name = name,
-            author = "jon"
-        )
-        playlistRef.child(key).setValue(playlist)
-
-    }
-    fun listenForPlaylist(username: String? = null) { //string for later when it only listens for a specific profile
-        playlistRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val arrayList: ArrayList<PlaylistItem> = ArrayList()
-                for (child in dataSnapshot.children) {
-                    val playlist = child.getValue(PlaylistItem::class.java)
-
-                    if (playlist != null) {
-                        // Optional filtering by author
-                        /*
-                        if (author == null || playlist.author == author) {
-                            list.add(playlist)
+                // If username matches query then save this into new list
+                if (username != null && username.lowercase().startsWith(query.lowercase())) {
+                    // ✅ FETCH BITMAP ICI
+                    val filePath = picturePath.replace("gs://muzikproject1a.firebasestorage.app/", "")
+                    storage.reference.child(filePath).getBytes(Long.MAX_VALUE)
+                        .addOnSuccessListener { bytes ->
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            results.add(UserProfile(username, bitmap))
+                            _foundUsers.value = results.toList()
                         }
-                         */
-                        arrayList.add(playlist)
-                    }
+                        .addOnFailureListener {
+                            results.add(UserProfile(username, null))
+                            _foundUsers.value = results.toList()
+                        }
                 }
-                _playlists.value = arrayList
             }
 
-            override fun onCancelled(error: DatabaseError) {}
-        })
-    }
-    fun deletePlaylist(playlistId: String) {
-        if (playlistId.isBlank()) return
-
-        playlistRef.child(playlistId).removeValue()
-
+            _foundUsers.value = results
+        }.addOnFailureListener {
+            _foundUsers.value = emptyList()
+        }
     }
 
+    fun addFriend(pressedUsername: String, currentUsername: String){
+        // Fetches profiles from database
+        usersRef.get().addOnSuccessListener { snapshot ->
+            var currentUserUid: String? = null
+            var pressedUserUid: String? = null
 
+            // Find UID linked to current user and targeted friend
+            snapshot.children.forEach { child ->
+                val username = child.child("username").getValue(String::class.java)
+                val uid = child.key
 
+                if (username == currentUsername) {
+                    currentUserUid = uid
+                }
+                if (username == pressedUsername) {
+                    pressedUserUid = uid
+                }
+            }
+
+            // Add friend UID
+            usersRef.child(currentUserUid!!).child("Friends").child(pressedUserUid!!).setValue(true)
+
+        }.addOnFailureListener { error ->
+            Log.e("AddFriend", "Error: ${error.message}")
+        }
+    }
 }

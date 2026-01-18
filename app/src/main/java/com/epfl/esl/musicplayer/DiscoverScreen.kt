@@ -32,77 +32,135 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.text.style.TextAlign
+import com.google.firebase.storage.FirebaseStorage
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.runtime.LaunchedEffect
+import android.media.MediaMetadataRetriever
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import java.io.File
 
 @Composable
 fun DiscoverScreen(
-    onSongClicked: (List<SongItem>, Int) -> Unit,
-    discoverViewModel: DiscoverViewModel= viewModel(),
-    modifier: Modifier=Modifier
+    modifier: Modifier = Modifier,
+    discoverViewModel: DiscoverViewModel = viewModel()
 ){
+    // For research query
+    val searchQuery by discoverViewModel.searchQuery.observeAsState("")
+    val filteredSongs by discoverViewModel.filteredSongs.observeAsState(emptyList())
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedSongLink by remember { mutableStateOf("") }
+
+    val playlists by discoverViewModel.playlists.observeAsState(emptyList())
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        var showDialog by remember { mutableStateOf(false) }
-        var selectedSongId by remember { mutableStateOf("") }
+        LazyColumn() {
+            item {
+                Text(
+                    text = stringResource(id = R.string.discover_text),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
 
-        val songs by discoverViewModel.songs.observeAsState()
-        val playlists by discoverViewModel.playlists.observeAsState()
+            // Search bar
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { discoverViewModel.updateSearchQuery(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search songs...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search music"
+                        )
+                    },
+                    singleLine = true
+                )
+            }
 
-
-        Column()
-        {
-            //stylize text
-            Text(text = stringResource(id = R.string.discover_text))
-            songs?.let {
-                LazyColumn {
-                    itemsIndexed(it) { index, song ->
-
-                        SongItemRow(
-                            songItem = song,
-                            onAddClicked={
-                                selectedSongId=song.Id
-                                showDialog=true},
-                            onSongClicked = onSongClicked,
-                            currentPlaylist = songs?: emptyList(),
-                            songIdx = index,
-                            modifier = modifier.padding(8.dp))
+            items(filteredSongs.size) { index ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (filteredSongs[index].image != null) {
+                        val bitmap = BitmapFactory.decodeByteArray(filteredSongs[index].image!!, 0, filteredSongs[index].image!!.size)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Cover",
+                            modifier = Modifier
+                                .width(40.dp)
+                                .padding(end = 8.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.MusicNote,
+                            contentDescription = "Music file",
+                            modifier = Modifier
+                                .width(40.dp)
+                                .padding(end = 8.dp)
+                        )
                     }
+
+                    Text(
+                        text = filteredSongs[index].title ?: "Unknown title",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            showDialog = true
+                            selectedSongLink = filteredSongs[index].link ?: "Unknown link"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add to playlist",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                 }
             }
-            if(showDialog){
-                AddSongToPlaylistDialog(
-                    playlists = playlists?: emptyList(),
-                    onAdd = {id->
-                        discoverViewModel.addSongToPlaylist(
-                            songId = selectedSongId,
-                            playlistId = id
-                        )
-                        showDialog=false
-                    },
-                    onCancel = {showDialog=false})
-            }
+        }
+        if(showDialog){
+            AddSongToPlaylistDialog(
+                playlists = playlists,
+                onAdd = {playlistId->
+                    discoverViewModel.addSongToPlaylist(
+                        playlistId = playlistId,
+                        songId = selectedSongLink
+                    )
+                    showDialog=false
+                },
+                onCancel = {showDialog=false})
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 //composable to add song to a playlist
 @Composable
 fun AddSongToPlaylistDialog(
-    playlists: List<PlaylistItem>,
+    playlists: List<playlistMetadata>,
     onAdd: (String) -> Unit,      // playlistId
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -133,7 +191,7 @@ fun AddSongToPlaylistDialog(
                                 onClick = { selectedPlaylistId = playlist.id }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = playlist.name?:"")
+                            Text(text = playlist.title?:"")
                         }
                     }
                 }

@@ -1,17 +1,18 @@
 package com.epfl.esl.musicplayer
 
 import android.app.Application
-import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.util.Log
 import androidx.activity.result.launch
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Matrix
 import androidx.lifecycle.ViewModel
@@ -26,17 +27,21 @@ import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataRequest
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 
 data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
     application : Application,
     audioPlayer: AudioPlayerService = AudioPlayerService(application.applicationContext),
-    private val dataClient: DataClient
+    private val dataClient: DataClient,
+    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application)
 ) : AndroidViewModel(application) {
 
-    //private val audioPlayer = AudioPlayerService(application.applicationContext)
-    private val audioPlayer = audioPlayer
+    private val audioPlayer = AudioPlayerService(application.applicationContext)
 
     // Service variables
     val isPlaying: LiveData<Boolean?> = audioPlayer.isPlaying
@@ -44,12 +49,12 @@ class PlayScreenViewModel (
     val duration: LiveData<Int> = audioPlayer.duration
     val title: LiveData<String> = audioPlayer.title
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
+    val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
-    private val originalPlaylist = emptyList<SongItem>()
-    var currentPlaylist by mutableStateOf<List<SongItem>>(emptyList())
-
-    var currentTrackIndex by mutableStateOf(0)
+    val originalPlaylist = emptyList<String>()
+    var currentPlaylist by mutableStateOf(originalPlaylist)
+    var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
 
     private val _shuffleOn = MutableLiveData(false)
     val shuffleOn: LiveData<Boolean> = _shuffleOn
@@ -119,36 +124,43 @@ class PlayScreenViewModel (
     }
     // Right arrow button
     fun onRightArrowClick() {
-        if (_shuffleOn.value){
-            currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.size
-            playCurrentTrack()
-        } else {
-            if (_repeatMode.value == 2){ // Repeat one mode
-                audioPlayer.rewind()
-            } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
+        if (_repeatMode.value == 2){ // Repeat one mode
+            audioPlayer.rewind()
+        } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
+            // Check if now-finished music is already present within playlist
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val existsBeforeCurrent = currentPlaylist.subList(0, currentTrackIndex).contains(currentTrack)
+
+            // If does exist => Music was added to queue hence need to delete from currentPlaylist
+            if (existsBeforeCurrent) {
+                currentPlaylist = currentPlaylist.toMutableList().apply {
+                    removeAt(currentTrackIndex)
+                }
+            } else { // Was not a queue-added music => Keep going normally
                 currentTrackIndex++
-                playCurrentTrack()
-            } else if (_repeatMode.value == 1) { // End of playlist but with repeat mode on
-                currentTrackIndex = 0
-                playCurrentTrack()
             }
+            playCurrentTrack()
+        } else if (_repeatMode.value == 1) { // End of playlist but with repeat mode on
+            // Check if now-finished music is already present within playlist
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val existsBeforeCurrent = currentPlaylist.subList(0, currentTrackIndex).contains(currentTrack)
+
+            // If does exist => Music was added to queue hence need to delete from currentPlaylist
+            if (existsBeforeCurrent) {
+                currentPlaylist = currentPlaylist.toMutableList().apply {
+                    removeAt(currentTrackIndex)
+                }
+            }
+
+            currentTrackIndex = 0
+            playCurrentTrack()
         }
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
-        val song = currentPlaylist[index]
-        var storageRef = FirebaseStorage.getInstance().getReference(song.Path?:"")
-
-        storageRef.downloadUrl
-            .addOnSuccessListener { uri ->
-                audioPlayer.play(uri)
-                isPlayerInitialized = true
-                sendSongDataToWear()
-            }
-            .addOnFailureListener {
-                // handle error (toast / log)
-            }
-
+        currentTrackIndex = index
+        audioPlayer.play(currentPlaylist[index])
+        isPlayerInitialized = true
     }
     // To get timing for slider
     fun onSeek(newPosition: Float){
@@ -156,6 +168,12 @@ class PlayScreenViewModel (
     }
 
     init {
+        // Initialize equalizer
+        audioPlayer.audioSessionId.observeForever { sessionId ->
+            if (sessionId != null && sessionId > 0) {
+                equalizerViewModel.setEqualizer(sessionId)
+            }
+        }
         // To handle end of music
         audioPlayer.onCompletionListener = {
             onRightArrowClick()
@@ -167,9 +185,15 @@ class PlayScreenViewModel (
 
         if (_shuffleOn.value) {
             // Activate shuffle
-            currentPlaylist = originalPlaylist.shuffled()
+            val currentTrack = currentPlaylist[currentTrackIndex]
+            val shuffled = originalPlaylist.shuffled().toMutableList()
+            shuffled.remove(currentTrack)  // Removes currentTrack
+            shuffled.add(0, currentTrack)  // Add currentTrack at position 0
+            currentPlaylist = shuffled
+            currentTrackIndex = 0  // Current index is reset to 0
         } else {
             // Deactivate shuffle
+            currentTrackIndex = originalPlaylist.indexOf(currentPlaylist[currentTrackIndex])
             currentPlaylist = originalPlaylist
         }
     }
@@ -182,15 +206,15 @@ class PlayScreenViewModel (
         }
     }
     // In case metadata has no title
-    fun getTrackName(resId: Int): String {
-        return getApplication<Application>().resources.getResourceEntryName(resId)
+    fun getTrackName(path: String): String {
+        return path.substringAfterLast("/").substringBeforeLast(".")
     }
     // For sheet queue
-    fun getTrackMetadata(resId: Int): Metadata {
+    fun getTrackMetadata(resId: String): Metadata {
         val retriever = MediaMetadataRetriever()
         return try {
             // Get URI
-            val uri = android.net.Uri.parse("android.resource://${getApplication<Application>().packageName}/$resId")
+            val uri = android.net.Uri.parse(resId)
             retriever.setDataSource(getApplication(), uri)
             // Extract title
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
@@ -206,30 +230,21 @@ class PlayScreenViewModel (
         }
     }
 
-    fun changePlaylist(newList: List<SongItem>,newIdx:Int){
-        currentPlaylist=newList
-        currentTrackIndex=newIdx
-        onSeek(0f)
+    fun addToQueue(index: Int) {
+        // Add music right after the current track
+        val track = originalPlaylist[index]
+        val newPlaylist = currentPlaylist.toMutableList()
+
+        // Insert at position currentTrackIndex + 1 (right after current track)
+        newPlaylist.add(currentTrackIndex + 1, track)
+        currentPlaylist = newPlaylist
+    }
+
+    fun changeQueue(queue:List<String>,idx:Int){
+        currentPlaylist=queue
+        currentTrackIndex=idx
         playCurrentTrack()
 
     }
-}
 
-class PlayScreenViewModelFactory(
-    private val application: Application,
-    private val audioPlayerService: AudioPlayerService,
-    private val dataClient: DataClient
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PlayScreenViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return PlayScreenViewModel(
-                application = application,
-                audioPlayer = audioPlayerService,
-                dataClient = dataClient
-            ) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
 }

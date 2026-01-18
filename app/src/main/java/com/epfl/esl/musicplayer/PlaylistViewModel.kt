@@ -1,95 +1,66 @@
 package com.epfl.esl.musicplayer
 
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.google.firebase.database.*
+import com.google.firebase.database.FirebaseDatabase
+import android.app.Application
 
-class PlaylistViewModel(playlistId: String) : ViewModel() {
 
-    private val database = FirebaseDatabase.getInstance()
-    private val playlistsRef = database.getReference("Playlists")
-    private val songsRef = database.getReference("Musics")
+data class playlistMetadata (
+    val title: String? = "",
+    val creator: String? = "",
+    val id: String? = ""
+)
 
-    // Selected playlist
-    private val _playlistName = MutableLiveData<String>("")
-    val playlistName: LiveData<String> get() = _playlistName
+class PlaylistViewModel(
+    application: Application
+): AndroidViewModel(application) {
+    private val playlistRef = FirebaseDatabase.getInstance().getReference("Playlists")
 
-    // Songs in the playlist
-    private val _songs = MutableLiveData<List<SongItem>>(emptyList())
-    val songs: LiveData<List<SongItem>> get() = _songs
-
-    // Listener references so we can remove them in onCleared
-    private var playlistListener: ValueEventListener? = null
+    private val _playlists = MutableLiveData<List<playlistMetadata>>(emptyList())
+    val playlists: LiveData<List<playlistMetadata>> = _playlists
 
     init {
-        // Start listening for playlist changes
-        listenToPlaylist(playlistId)
+        loadPlaylists()
     }
 
-    private fun listenToPlaylist(playlistId: String) {
-        val ref = playlistsRef.child(playlistId)
+    fun loadPlaylists() {
+        playlistRef.get().addOnSuccessListener { snapshot ->
+            val results = mutableListOf<playlistMetadata>()
 
-        playlistListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val playlist = snapshot.getValue(PlaylistItem::class.java)
-                _playlistName.value = playlist?.name ?: ""
+            snapshot.children.forEach { child ->
+                val playlistName = child.child("name").getValue(String::class.java)
+                val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
+                val id = child.key ?: ""
 
-                val trackIds = playlist?.tracks ?: emptyList()
-                fetchSongsByIds(trackIds) { songList ->
-                    _songs.value = songList
-                }
+                results.add(playlistMetadata(playlistName, playlistCreator, id))
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                // Optionally handle errors
-            }
-        }
-
-        ref.addValueEventListener(playlistListener as ValueEventListener)
-    }
-
-    private fun fetchSongsByIds(
-        songIds: List<String>,
-        onResult: (List<SongItem>) -> Unit
-    ) {
-        if (songIds.isEmpty()) {
-            onResult(emptyList())
-            return
-        }
-
-        val resultList = mutableListOf<SongItem>()
-        var completedRequests = 0
-
-        songIds.forEach { id ->
-            songsRef.child(id).get()
-                .addOnSuccessListener { snapshot ->
-                    snapshot.getValue(SongItem::class.java)?.let { resultList.add(it) }
-                    completedRequests++
-                    if (completedRequests == songIds.size) onResult(resultList)
-                }
-                .addOnFailureListener {
-                    completedRequests++
-                    if (completedRequests == songIds.size) onResult(resultList)
-                }
+            _playlists.value = results
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        playlistListener?.let { playlistsRef.removeEventListener(it) }
-    }
-}
+    fun addPlaylist(name: String, currentUsername: String) {
+        if (name.isBlank()) return
 
-
-class PlaylistViewModelFactory(private val playlistId: String) :
-    ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PlaylistViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return PlaylistViewModel(playlistId) as T
+        val key = playlistRef.push().key ?: return
+        val playlist = mapOf(
+            "name" to name,
+            "author" to currentUsername
+        )
+        playlistRef.child(key).setValue(playlist).addOnSuccessListener {
+            loadPlaylists()
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
+
+    fun deletePlaylist(playlistId: String) {
+        if (playlistId.isBlank()) return
+
+        playlistRef.child(playlistId).removeValue().addOnSuccessListener {
+            loadPlaylists()
+        }
+
+    }
+
 }

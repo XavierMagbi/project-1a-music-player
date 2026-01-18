@@ -39,11 +39,16 @@ class AudioPlayerService (
     val cover: LiveData<ByteArray?>
         get() = _cover
 
-
     var onCompletionListener: (() -> Unit)? = null
 
-    fun play(uri: Uri) {
-        // Stop & release previous MediaPlayer
+    // For equalizer
+    private val _audioSessionId = MutableLiveData<Int?>(null)
+    val audioSessionId: LiveData<Int?>
+        get() = _audioSessionId
+
+
+    fun play(musicResId: String){
+        // To stop playing the initial song when switching to another one
         mediaPlayer?.let {
             if (it.isPlaying) {
                 it.stop()
@@ -52,43 +57,42 @@ class AudioPlayerService (
         }
         mediaPlayer = null
 
-        // ---- METADATA EXTRACTION ----
+        // To extract metadata through URI Android
         val retriever = MediaMetadataRetriever()
         try {
+            // Get URI
+            //val uri = Uri.parse("android.resource://${context.packageName}/$musicResId")
+            val uri = Uri.parse(musicResId)
             retriever.setDataSource(context, uri)
-
-            val metaTitle =
-                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            // Get title
+            val metaTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
             _title.value = metaTitle ?: "Unknown"
-
+            // Get cover image
             val metaCover = retriever.embeddedPicture
             _cover.value = metaCover
-
         } catch (e: Exception) {
-            _title.value = "Error reading metadata"
+            _title.value = "Error with metadata lecture"
             _cover.value = null
         } finally {
             retriever.release()
         }
 
-        // ---- PLAYBACK ----
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(context, uri)
-            setOnPreparedListener {
-                it.start()
-                _isPlaying.value = true
-                _duration.value = it.duration
-                startUpdatingProgress()
-            }
-            setOnCompletionListener {
-                _isPlaying.value = false
-                stopUpdatingProgress()
-                onCompletionListener?.invoke()
-            }
-            prepareAsync() // IMPORTANT for remote files
+        // To play the music
+        mediaPlayer = MediaPlayer.create(context, Uri.parse(musicResId)) // Requires APK hence Context to access musics
+        // For equalizer
+        _audioSessionId.value = mediaPlayer?.audioSessionId
+        mediaPlayer?.start()
+        _isPlaying.value = true
+        startUpdatingProgress()
+        _duration.value = mediaPlayer?.duration ?: 0
+
+        // To handle end of music
+        mediaPlayer?.setOnCompletionListener {
+            _isPlaying.value = false
+            stopUpdatingProgress()
+            onCompletionListener?.invoke()
         }
     }
-
 
     fun pause(){
         mediaPlayer?.pause()
@@ -128,5 +132,9 @@ class AudioPlayerService (
 
     private fun stopUpdatingProgress() {
         updateJob?.cancel()
+    }
+
+    fun changeQueue(songIdx:Int,newQueue:List<Int>){
+
     }
 }
