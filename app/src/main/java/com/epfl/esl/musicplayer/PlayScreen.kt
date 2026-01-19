@@ -86,12 +86,6 @@ fun PlayScreen(
     var showQueue by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
-    // For research query
-    var searchQuery by remember { mutableStateOf("") }
-
-    // Indicate list or player mode
-    var isPlayerActive by remember { mutableStateOf(false) }
-
     // To convert ByteArray to Image
     val painter = if (coverImage != null) {
         val bitmap = remember(coverImage) {

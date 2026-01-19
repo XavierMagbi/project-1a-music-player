@@ -45,7 +45,7 @@ fun SelectedPlaylistScreen(
     modifier: Modifier = Modifier
 ) {
     val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application))
-    var searchQuery by remember { mutableStateOf("") }
+    val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
     val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")
@@ -58,12 +58,6 @@ fun SelectedPlaylistScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            /*
-            Button(
-                onClick = {
-                    onSongClicked(1, listOf(R.raw.music0, R.raw.music1, R.raw.music2))
-                }
-            ) {}*/
             LazyColumn() {
                 item {
                     Text(
