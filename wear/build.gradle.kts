@@ -39,35 +39,35 @@ android {
 }
 
 dependencies {
-        // BOM (Bill of Materials) - Manages versions for core Compose libraries
-        implementation(platform("androidx.compose:compose-bom:2024.01.00")) // Use a recent BOM
-        androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
+        // Compose BOM
+    implementation(platform("androidx.compose:compose-bom:2024.01.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
 
-        // Core Compose libraries (versions are managed by the BOM)
-        implementation("androidx.compose.ui:ui")
-        implementation("androidx.compose.ui:ui-graphics")
-        implementation("androidx.activity:activity-compose")
+        // Core Compose
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.activity:activity-compose")
 
-        // Wearable Data Layer
-        implementation("com.google.android.gms:play-services-wearable:18.1.0")
+        // Wear Data Layer
+    implementation("com.google.android.gms:play-services-wearable:18.1.0")
 
-        // --- NEW WEAR COMPOSE MATERIAL 3 LIBRARIES ---
-        implementation("androidx.wear.compose:compose-material3:1.5.6")
-        implementation("androidx.wear.compose:compose-foundation") // Foundation for Wear
+        // Wear Compose UI
+    implementation("androidx.wear.compose:compose-material3:1.5.6")
+    implementation("androidx.wear.compose:compose-foundation:1.5.6")
 
-        // Icons library
-        implementation("androidx.compose.material:material-icons-extended")
+        // Icons
+    implementation("androidx.compose.material:material-icons-extended")
 
-        // --- TOOLING FOR PREVIEWS (DEBUG ONLY) ---
-        // Remove phone-specific tooling to fix WearDevices issue
-        debugImplementation("androidx.compose.ui:ui-tooling")
-        // Use the correct Wear OS tooling
-        debugImplementation("androidx.wear.compose:compose-ui-tooling:1.5.6")
+        // Preview tooling
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.wear:wear-tooling-preview:1.0.0")
 
         // Testing
-        androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-        debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     }
+
 
 
 

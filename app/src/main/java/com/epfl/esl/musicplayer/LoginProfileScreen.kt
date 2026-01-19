@@ -4,6 +4,7 @@ package com.epfl.esl.musicplayer
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -85,7 +86,7 @@ fun LoginProfileScreen(
             onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) },
             onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
             onSignInButtonClicked = {
-                isLoading = false
+                isLoading = true
                 loginProfileViewModel.fetchProfile()
             },
             onSignUpButtonClicked = {
@@ -236,6 +237,7 @@ fun LoginProfileContent(
                 } else if (password.isBlank()) {
                     Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
                 } else {
+                    Log.d("LoginScreen", "Sign In button CLICKED!")
                     onSignInButtonClicked()
                 }
             },
@@ -279,7 +281,7 @@ fun LoginProfileContent(
                             .show()
                         return@launch
                     }
-
+                    Log.d("LoginScreen", "Sign On button CLICKED!")
                     onSignUpButtonClicked()
                 }
             },

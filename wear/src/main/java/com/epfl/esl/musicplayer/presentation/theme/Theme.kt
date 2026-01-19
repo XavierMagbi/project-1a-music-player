@@ -1,7 +1,7 @@
 package com.epfl.esl.musicplayer.presentation.theme
 
 import androidx.compose.runtime.Composable
-import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material3.MaterialTheme
 
 @Composable
 fun Project1amusicplayerTheme(

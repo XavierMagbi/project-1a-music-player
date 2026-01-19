@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import androidx.wear.compose.ui.tooling.preview.WearDevices
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.wear.tooling.preview.devices.WearDevices
+import androidx.wear.compose.material3.LinearProgressIndicator
 import com.epfl.esl.musicplayer.R
 import com.epfl.esl.musicplayer.presentation.theme.Project1amusicplayerTheme
 import com.google.android.gms.wearable.DataClient
@@ -180,7 +180,7 @@ fun HomeScreen(
 
             // 2. Use the correct non-interactive LinearProgressIndicator from Material 3
             LinearProgressIndicator(
-                progress = { progress }, // Note: M3 uses a lambda for progress
+                progress = {progress} , // Note: M3 uses a lambda for progress
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -195,14 +195,13 @@ fun HomeScreen(
             ) {
                 Text(
                     text = formatTime2(currentPosition),
-                    style = MaterialTheme.typography.caption3
+                    style = MaterialTheme.typography.labelSmall
                 )
                 Text(
                     text = formatTime2(duration),
-                    style = MaterialTheme.typography.caption3
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
-
 
             // 3. Control Icons
             Row(
