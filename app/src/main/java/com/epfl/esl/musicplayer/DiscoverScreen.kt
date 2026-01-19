@@ -48,12 +48,18 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalContext
 import java.io.File
 
 @Composable
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
-    discoverViewModel: DiscoverViewModel = viewModel()
+    currentUsername: String = "",
+    discoverViewModel: DiscoverViewModel = viewModel (
+        factory = DiscoverViewModelFactory(
+            LocalContext.current.applicationContext as android.app.Application,
+            currentUsername)
+    )
 ){
     // For research query
     val searchQuery by discoverViewModel.searchQuery.observeAsState("")

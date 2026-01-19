@@ -10,6 +10,9 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import java.net.URLDecoder
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 
 data class musicMetadata (
     val title: String? = "",
@@ -17,7 +20,20 @@ data class musicMetadata (
     val link: String? = ""
 )
 
-class DiscoverViewModel: ViewModel() {
+//Week 5: ViewModels and System Services (slide 8)
+class DiscoverViewModelFactory(
+    private val application: Application,
+    private val currentUsername: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return DiscoverViewModel(application, currentUsername) as T
+    }
+}
+
+class DiscoverViewModel(
+    application: Application,
+    private val currentUsername: String
+): AndroidViewModel(application) {
     private val storage = FirebaseStorage.getInstance()
 
     private val _searchQuery = MutableLiveData("")
@@ -106,7 +122,9 @@ class DiscoverViewModel: ViewModel() {
                 val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
                 val id = child.key ?: ""
 
-                results.add(playlistMetadata(playlistName, playlistCreator, id))
+                if (playlistCreator == currentUsername) {
+                    results.add(playlistMetadata(playlistName, playlistCreator, id))
+                }
             }
 
             _playlists.value = results

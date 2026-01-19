@@ -355,7 +355,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("discover") {
-                                DiscoverScreen()
+                                DiscoverScreen(
+                                    currentUsername = username
+                                )
                             }
                             composable("music") {
                                 MusicScreen(
