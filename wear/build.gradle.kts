@@ -39,25 +39,36 @@ android {
 }
 
 dependencies {
+        // BOM (Bill of Materials) - Manages versions for core Compose libraries
+        implementation(platform("androidx.compose:compose-bom:2024.01.00")) // Use a recent BOM
+        androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
 
-    implementation(libs.play.services.wearable)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation("androidx.wear.compose:compose-material:1.3.1")
-    implementation(libs.androidx.activity.compose)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation("com.google.android.gms:play-services-wearable:18.1.0")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation ("androidx.wear.compose:compose-ui-tooling:1.4.0")// Replaces libs.androidx.wear.tooling.preview
-    implementation("androidx.activity:activity-compose:1.9.0") // Replaces libs.androidx.activity.compose
-    implementation("androidx.core:core-splashscreen:1.0.1") // Replaces libs.androidx.core.splashscreen
+        // Core Compose libraries (versions are managed by the BOM)
+        implementation("androidx.compose.ui:ui")
+        implementation("androidx.compose.ui:ui-graphics")
+        implementation("androidx.activity:activity-compose")
 
-}
+        // Wearable Data Layer
+        implementation("com.google.android.gms:play-services-wearable:18.1.0")
+
+        // --- NEW WEAR COMPOSE MATERIAL 3 LIBRARIES ---
+        implementation("androidx.wear.compose:compose-material3:1.5.6")
+        implementation("androidx.wear.compose:compose-foundation") // Foundation for Wear
+
+        // Icons library
+        implementation("androidx.compose.material:material-icons-extended")
+
+        // --- TOOLING FOR PREVIEWS (DEBUG ONLY) ---
+        // Remove phone-specific tooling to fix WearDevices issue
+        debugImplementation("androidx.compose.ui:ui-tooling")
+        // Use the correct Wear OS tooling
+        debugImplementation("androidx.wear.compose:compose-ui-tooling:1.5.6")
+
+        // Testing
+        androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+        debugImplementation("androidx.compose.ui:ui-test-manifest")
+    }
+
+
 
 

@@ -36,10 +36,10 @@ data class Metadata(val title: String, val cover: ByteArray?)
 
 class PlayScreenViewModel (
     application : Application,
-    audioPlayer: AudioPlayerService = AudioPlayerService(application.applicationContext),
-    private val dataClient: DataClient,
-    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application)
+    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application),
+    private val dataClient : DataClient
 ) : AndroidViewModel(application) {
+
 
     private val audioPlayer = AudioPlayerService(application.applicationContext)
 
@@ -62,7 +62,7 @@ class PlayScreenViewModel (
     private val _repeatMode = MutableLiveData(0)
     val repeatMode: LiveData<Int> = _repeatMode
 
-     fun sendSongDataToWear() {
+     fun sendSongDataToWear(dataClient: DataClient) {
         //  viewModelScope for a lifecycle-aware background task
         viewModelScope.launch {
             val currentTitle = title.value ?: "No Title"
@@ -90,6 +90,8 @@ class PlayScreenViewModel (
 
                 putDataRequest.setUrgent()
 
+                dataClient.putDataItem(putDataRequest).await()
+
                 Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
             } catch (e: Exception) {
                 Log.e("PlayScreenViewModel", "Failed to send song data to watch.", e)
@@ -110,7 +112,7 @@ class PlayScreenViewModel (
                 isPlayerInitialized = true
             }
         }
-        sendSongDataToWear()
+        sendSongDataToWear(dataClient)
     }
     // Left arrow button
     fun onLeftArrowClick(){
@@ -119,7 +121,7 @@ class PlayScreenViewModel (
             playCurrentTrack()
         } else {
             audioPlayer.rewind()
-            sendSongDataToWear()
+            sendSongDataToWear(dataClient)
         }
     }
     // Right arrow button

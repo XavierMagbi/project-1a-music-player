@@ -5,7 +5,6 @@
 
 package com.epfl.esl.musicplayer.presentation
 
-
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -43,11 +42,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.InlineSlider
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
-import androidx.wear.tooling.preview.devices.WearDevices
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.ui.tooling.preview.WearDevices
+import androidx.compose.material3.LinearProgressIndicator
 import com.epfl.esl.musicplayer.R
 import com.epfl.esl.musicplayer.presentation.theme.Project1amusicplayerTheme
 import com.google.android.gms.wearable.DataClient
@@ -56,6 +55,7 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.TimeUnit
+
 
 
 
@@ -170,16 +170,22 @@ fun HomeScreen(
                 modifier = Modifier.padding(horizontal = 16.dp) // Prevent text from touching screen edges
             )
 
-            // The InlineSlider with correct context
-            InlineSlider(
-                value = currentPosition.toFloat(),
-                onValueChange = onSeek,
-                valueProgression = 0f..(if (duration > 0) duration.toFloat() else 1f),
+
+
+            val progress = if (duration > 0) {
+                currentPosition.toFloat() / duration.toFloat()
+            } else {
+                0f
+            }
+
+            // 2. Use the correct non-interactive LinearProgressIndicator from Material 3
+            LinearProgressIndicator(
+                progress = { progress }, // Note: M3 uses a lambda for progress
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                segmented = false
+                    .padding(horizontal = 16.dp)
             )
+
             // Time display
             Row(
                 modifier = Modifier

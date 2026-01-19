@@ -30,18 +30,6 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayCircleFilled
-import androidx.compose.material.icons.filled.Radio
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -100,7 +88,7 @@ class MainActivity : ComponentActivity() {
             MusicPlayerTheme {
                 val equalizerViewModel: EqualizerViewModel = viewModel()
                 val playScreenViewModel: PlayScreenViewModel = viewModel {
-                    PlayScreenViewModel(this@MainActivity.application, equalizerViewModel)
+                    PlayScreenViewModel(this@MainActivity.application, equalizerViewModel,dataClient)
                 }
 
                 val navController = rememberNavController()
@@ -201,7 +189,7 @@ class MainActivity : ComponentActivity() {
                                                 .clickable {
                                                     showSongBar=false
                                                     navController.navigate("musicPlayer")
-                                                           },
+                                                },
                                             shape = RoundedCornerShape(12.dp)
                                         ) {
                                             Row(
@@ -327,7 +315,7 @@ class MainActivity : ComponentActivity() {
                         {
                             composable("login") {
                                 val context = LocalContext.current
-                                LoginScreen(
+                                LoginProfileScreen(
                                     onNavigateToNewRecording = { loginInfo ->
                                         username = loginInfo.username
                                         imageUri = loginInfo.imageUri
@@ -387,7 +375,7 @@ class MainActivity : ComponentActivity() {
                                     onArrowClicked = {
                                         showSongBar=true
                                         navController.popBackStack()
-                                                     },
+                                    },
                                     playScreenViewModel = playScreenViewModel
                                 )
 
@@ -400,3 +388,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

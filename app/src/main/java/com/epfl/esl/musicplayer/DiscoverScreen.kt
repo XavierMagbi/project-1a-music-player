@@ -1,5 +1,6 @@
 package com.epfl.esl.musicplayer
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

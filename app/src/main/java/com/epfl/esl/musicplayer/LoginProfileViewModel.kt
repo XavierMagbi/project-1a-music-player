@@ -3,15 +3,9 @@ package com.epfl.esl.musicplayer
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.graphics.PointF.length
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
-import android.widget.Toast
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -86,7 +80,6 @@ class LoginProfileViewModel : ViewModel(){
         if(password.isLongEnough() && password.hasEnoughDigits() && password.isMixedCase() && password.hasSpecialChar()){
             return true;
         }
-
         return false
     }
 
@@ -144,7 +137,7 @@ class LoginProfileViewModel : ViewModel(){
         uploadProfileImage.addOnFailureListener {
             _uploadSuccess.value = false
         }.addOnSuccessListener { taskSnapshot ->
-            profileRef.child(key).child("photo URL").setValue(
+            profileRef.child(key).child("photo_URL").setValue(
                 (FirebaseStorage.getInstance()
                     .getReference()).toString() + "ProfileImages/" + username.value
                         + ".jpg")
@@ -196,6 +189,9 @@ class LoginProfileViewModel : ViewModel(){
         request.setUrgent()
         val putTask: Task<DataItem> = dataClient.putDataItem(request)
     }
+
+
+
 
 
 
