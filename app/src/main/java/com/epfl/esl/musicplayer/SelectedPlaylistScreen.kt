@@ -2,6 +2,7 @@ package com.epfl.esl.musicplayer
 
 import android.app.Application
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +47,8 @@ fun SelectedPlaylistScreen(
     onSongClicked:(Int,List<String>)->Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    
     val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application))
     val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
@@ -118,14 +123,19 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-
+                        IconButton(onClick = {
+                            // STILL TO BE CORRECTED AFTER MERGE
+                            Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowCircleRight,
+                                contentDescription = "Add to queue"
+                            )
+                        }
 
                     }
                 }
-
             }
-
-
         }
     }
     

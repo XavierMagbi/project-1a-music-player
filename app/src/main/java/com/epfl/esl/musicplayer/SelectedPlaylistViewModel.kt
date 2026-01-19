@@ -22,7 +22,6 @@ import androidx.lifecycle.AndroidViewModel
 class SelectedPlaylistViewModel(application : Application, playlistId: String) : AndroidViewModel(application){
     val context = getApplication<Application>().applicationContext
 
-
     private val database = FirebaseDatabase.getInstance()
     private val playlistsRef = database.getReference("Playlists")
 
@@ -155,11 +154,6 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
                 }
         }
     }
-
-
-
-
-
 }
 
 
