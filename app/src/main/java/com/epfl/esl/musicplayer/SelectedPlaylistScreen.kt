@@ -1,8 +1,14 @@
 package com.epfl.esl.musicplayer
 
+import android.app.Activity
 import android.app.Application
+import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
+import android.provider.MediaStore
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -34,11 +40,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 
 @Composable
 fun SelectedPlaylistScreen(
@@ -55,6 +65,21 @@ fun SelectedPlaylistScreen(
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
     val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")
     val newQueue by selectedPlaylistViewModel.newQueue.observeAsState(emptyList())
+
+    // For playlist picture
+    val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)
+
+    // From EE-490(g) labs to get result from intent
+    val resultLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                selectedPlaylistViewModel.updatePlaylistImage(uri!!)
+            }
+        }
+    )
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -64,6 +89,46 @@ fun SelectedPlaylistScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             LazyColumn() {
+                // Playlist picture
+                item{
+                    if (playlistImageUri != null){
+                        AsyncImage(
+                            model = playlistImageUri,
+                            contentDescription = "Playlist picutre",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .width(150.dp)
+                                .clickable(
+                                    onClick = {
+                                        // Open image picker
+                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                        intent.type = "image/*"
+                                        resultLauncher.launch(intent)
+                                    }
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.defaultplaylist),
+                            contentDescription = "Default playlist picture",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .width(150.dp)
+                                .clickable(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                        intent.type = "image/*"
+                                        resultLauncher.launch(intent)
+                                    }
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                // Playlist name
                 item {
                     Text(
                         text = playlistName,
@@ -138,5 +203,5 @@ fun SelectedPlaylistScreen(
             }
         }
     }
-    
 }
+

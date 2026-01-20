@@ -1,8 +1,14 @@
 package com.epfl.esl.musicplayer
 
 import android.annotation.SuppressLint
+import android.app.Activity.RESULT_OK
 import android.app.Application
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
@@ -16,11 +22,14 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.AndroidViewModel
+import java.io.ByteArrayOutputStream
 
 
 class SelectedPlaylistViewModel(application : Application, playlistId: String) : AndroidViewModel(application){
     val context = getApplication<Application>().applicationContext
+    private val playlistId = playlistId
 
     private val database = FirebaseDatabase.getInstance()
     private val playlistsRef = database.getReference("Playlists")
@@ -47,7 +56,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
     private val _newQueue = MutableLiveData<List<String>>(emptyList())
     val newQueue : LiveData<List<String>> = _newQueue
 
-
+    private val _playlistImageUri = MutableLiveData<Uri?>(null)
+    val playlistImageUri: LiveData<Uri?> = _playlistImageUri   
 
     init {
         // Start listening for playlist changes
@@ -61,7 +71,10 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         playlistListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 _playlistName.value =  snapshot.child("name").getValue(String::class.java)
-                //_playlistName.value = playlist?.name ?: ""
+
+                // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
+                val photoUrlString = snapshot.child("photo_URL").getValue(String::class.java)
+                _playlistImageUri.value = if (photoUrlString != null) Uri.parse(photoUrlString) else null   
 
                 val tracks = snapshot.child("tracks").children
                     .mapNotNull { it.getValue(String::class.java) }
@@ -152,6 +165,38 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
                     _songs.value = songList.toList()
                     filterSongs(_searchQuery.value ?: "")
                 }
+        }
+    }
+
+    // ==== To update playlist picture ====
+
+    // Update the profile image URI (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
+    fun updatePlaylistImage(newImageUri: Uri){
+        
+        // For transformations such as scaling
+        val matrix = Matrix()
+        // Get the image bitmap from the URI
+        var imageBitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, newImageUri)
+        // Scale down the image to reduce size before upload
+        val ratio: Float = 5F
+        val imageBitmapScaled = Bitmap.createScaledBitmap(
+            imageBitmap, (imageBitmap.width / ratio).toInt(),
+            (imageBitmap.height / ratio).toInt(), false)
+        imageBitmap = Bitmap.createBitmap(
+            imageBitmapScaled, 0, 0, (imageBitmap.width / ratio).toInt(),
+            (imageBitmap.height / ratio).toInt(), matrix, true)
+        // Convert the bitmap to a byte array and compress it as PNG
+        val stream = ByteArrayOutputStream()
+        imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val imageByteArray = stream.toByteArray()
+
+        // Upload new image to Firebase Storage
+        val playlistImageRef = storage.reference.child("PlaylistImages/" + playlistId + ".jpg")
+        val uploadPlaylistImage = playlistImageRef.putBytes(imageByteArray)
+
+        playlistImageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+            _playlistImageUri.value = downloadUrl  // Update LiveData with new URI
+            playlistsRef.child(playlistId).child("photo_URL").setValue(downloadUrl.toString())  // Update in Realtime Database
         }
     }
 }
