@@ -7,6 +7,8 @@ package com.epfl.esl.musicplayer.presentation
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -63,21 +65,41 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 
 
-
-
 class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var bitmap by mutableStateOf<Bitmap?>(null)
     private var songTitle by mutableStateOf("Hello World!")
     private var isPlaying by mutableStateOf(false)
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
+    private lateinit var sensorManager: SensorManager // Variables to use Gyroscope for wrist shaking
+    private var gyro: Sensor? = null
+    private lateinit var wristFlickGyroDetector: WristFlickGyroDetector
+
+    private lateinit var wearPlayViewModel : WearPlayViewModel
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+
+        wristFlickGyroDetector = WristFlickGyroDetector(
+            onFlick = { dir ->
+                Log.d("Main Activity","Movement Detected" + dir.toString())
+                if (dir == WristFlickGyroDetector.Direction.LEFT || dir == WristFlickGyroDetector.Direction.RIGHT) {
+                    wearPlayViewModel.onRightArrowClick()
+                }
+
+                // simplest: always "next"
+                // or: LEFT=prev, RIGHT=next
+            }
+        )
+
         setContent {
            Project1amusicplayerTheme {
+                wearPlayViewModel = viewModel()
                 HomeScreen(
                     songTitle,
                     bitmap,
@@ -89,7 +111,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     onPlayPauseClick = { },
                     onNextClick = { },
                     onSeek = { },
-                    flipButton = {isPlaying=!isPlaying}
+                    flipButton = {isPlaying=!isPlaying},
+                    wearPlayViewModel = wearPlayViewModel
 
 
                 )
@@ -100,11 +123,20 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     override fun onResume() {
         super.onResume()
         Wearable.getDataClient(this).addListener(this)
+
+        gyro?.let {
+            sensorManager.registerListener(
+                wristFlickGyroDetector,
+                it,
+                SensorManager.SENSOR_DELAY_GAME
+            )
+        }
         Log.d("Main Activity","addListener attached")
     }
     override fun onPause() {
         super.onPause()
         Wearable.getDataClient(this).removeListener(this)
+        sensorManager.unregisterListener(wristFlickGyroDetector)
         Log.d("Main Activity","removedListener attached")
     }
 
