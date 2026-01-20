@@ -12,7 +12,10 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.MarqueeAnimationMode.Companion.Immediately
+import androidx.compose.foundation.MarqueeAnimationMode.Companion.WhileFocused
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +59,8 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.TimeUnit
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 
 
 
@@ -69,6 +74,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContent {
            Project1amusicplayerTheme {
@@ -82,7 +88,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     onPreviousClick = { },
                     onPlayPauseClick = { },
                     onNextClick = { },
-                    onSeek = { }
+                    onSeek = { },
+                    flipButton = {isPlaying=!isPlaying}
+
+
                 )
             }
         }
@@ -100,8 +109,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
-        Log.d("Main Activity","rx")
-        dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/songInfo" }
+        //Log.d("Main Activity","rx")
+        dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/static_songInfo" }
             .forEach { event ->
 
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -111,10 +120,6 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
                 // Extract playback state
                 isPlaying = dataMap.getBoolean("isPlaying", false)
-
-
-                //Extract currentPosition
-                currentPosition = dataMap.getInt("currentPosition",0)
 
                 //Extract duration
                  duration = dataMap.getInt("duration",0)
@@ -126,6 +131,12 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 bitmap = receivedImageBytes?.let {
                     BitmapFactory.decodeByteArray(it, 0, it.size)
                 }
+            }
+        dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/dynamic_songInfo" }
+            .forEach { event ->
+                val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+
+                currentPosition = dataMap.getInt("currentPosition", 0)
             }
     }
 }
@@ -142,6 +153,8 @@ fun HomeScreen(
     onPlayPauseClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeek: (Float) -> Unit,
+    wearPlayViewModel : WearPlayViewModel=viewModel(),
+    flipButton:()-> Unit,
     modifier: Modifier = Modifier) {
 
     Box(
@@ -164,7 +177,7 @@ fun HomeScreen(
                 bitmap = displayBitmap,
                 contentDescription = "album cover",
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(80.dp)
                     .padding(bottom = 8.dp) // Add space below the image
             )
 
@@ -172,9 +185,17 @@ fun HomeScreen(
             Text(
                 text = songTitle,
                 style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
-                modifier = Modifier.padding(horizontal = 16.dp) // Prevent text from touching screen edges
+                maxLines = 1, // Number of Line
+                softWrap = false, // Prevent Wrapping of text
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .basicMarquee(
+                        iterations = Int.MAX_VALUE,
+                        animationMode = Immediately,
+                        repeatDelayMillis = 2,
+                        velocity = 10.dp
+                    )// Prevent text from touching screen edges
             )
-
 
 
             val progress = if (duration > 0) {
@@ -185,17 +206,19 @@ fun HomeScreen(
 
             // 2. Use the correct non-interactive LinearProgressIndicator from Material 3
             LinearProgressIndicator(
-                progress = {progress} , // Note: M3 uses a lambda for progress
+                progress = { progress }, // Note: M3 uses a lambda for progress
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 10.dp)
+                    .padding(top = 10.dp)
+
             )
 
             // Time display
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 15.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -213,32 +236,37 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp) // Add space above the icons
+                    .fillMaxWidth() // Add space above the icons
             ) {
                 // Previous button
                 Icon(
                     imageVector = Icons.Filled.FastRewind,
                     contentDescription = "Previous",
                     modifier = Modifier
-                        .size(45.dp)
-                        .clickable { onPreviousClick() }
+                        .weight(2f)
+                        .size(40.dp)
+                        .clickable { wearPlayViewModel.onLeftArrowClick() }
                 )
                 // Play/pause button
                 Icon(
                     imageVector = if (isPlaying == true) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = "Play/Pause",
                     modifier = Modifier
-                        .size(60.dp) // Make the central button larger
-                        .clickable { onPlayPauseClick() }
+                        .weight(1f)
+                        .size(50.dp) // Make the central button larger
+                        .clickable {
+                            wearPlayViewModel.onPlayPauseClick()
+                            flipButton()
+                        }
                 )
                 // Next button
                 Icon(
                     imageVector = Icons.Filled.FastForward,
                     contentDescription = "Next",
                     modifier = Modifier
-                        .size(45.dp)
-                        .clickable { onNextClick() }
+                        .weight(2f)
+                        .size(40.dp)
+                        .clickable { wearPlayViewModel.onRightArrowClick() }
                 )
             }
         }
@@ -268,7 +296,10 @@ fun HomeScreenPreview() {
         onPreviousClick = {},
         onPlayPauseClick = {},
         onNextClick = {},
-        onSeek = {}
+        onSeek = {},
+        flipButton = {}
+
+
     )
 }
 

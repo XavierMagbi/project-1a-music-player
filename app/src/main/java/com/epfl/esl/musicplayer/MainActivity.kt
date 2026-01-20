@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -68,6 +69,8 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.MessageClient
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.Firebase
 import kotlinx.coroutines.launch
@@ -77,7 +80,7 @@ import java.nio.charset.StandardCharsets
 import com.google.firebase.database.database
 import com.google.firebase.storage.storage
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener {
     private lateinit var dataClient: DataClient
     private var username by mutableStateOf("")
     private var imageUri by mutableStateOf<Uri?>(null)
@@ -91,6 +94,8 @@ class MainActivity : ComponentActivity() {
     private val storageRef = Firebase.storage.reference
     private val profileRef = Firebase.database.getReference("Profiles")
 
+    private lateinit var playScreenViewModel: PlayScreenViewModel
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,8 +106,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MusicPlayerTheme {
                 val equalizerViewModel: EqualizerViewModel = viewModel()
-                val playScreenViewModel: PlayScreenViewModel = viewModel {
-                    PlayScreenViewModel(this@MainActivity.application, equalizerViewModel,dataClient)
+                 playScreenViewModel =  viewModel {
+                    PlayScreenViewModel(
+                        this@MainActivity.application,
+                        equalizerViewModel,
+                        dataClient
+                    )
                 }
 
                 val navController = rememberNavController()
@@ -194,7 +203,9 @@ class MainActivity : ComponentActivity() {
                         bottomBar = {
 
                             if (shouldShowBars) {
-                                val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
+                                val currentPosition by playScreenViewModel.currentPosition.observeAsState(
+                                    0
+                                )
                                 val duration by playScreenViewModel.duration.observeAsState()
                                 val isPlaying by playScreenViewModel.isPlaying.observeAsState()
                                 val title by playScreenViewModel.title.observeAsState()
@@ -219,7 +230,7 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
-                                                    showSongBar=false
+                                                    showSongBar = false
                                                     navController.navigate("musicPlayer")
                                                 },
                                             shape = RoundedCornerShape(12.dp)
@@ -238,7 +249,7 @@ class MainActivity : ComponentActivity() {
                                                         .padding(8.dp)
                                                 )
                                                 Text(
-                                                    text = title?:"No Title",
+                                                    text = title ?: "No Title",
                                                     modifier = Modifier.weight(1f),
                                                     overflow = TextOverflow.Ellipsis,
                                                     maxLines = 1
@@ -256,7 +267,10 @@ class MainActivity : ComponentActivity() {
                                             // Time indicator
                                             LinearProgressIndicator(
                                                 progress = {
-                                                    if ((duration?:0) > 0) currentPosition.toFloat() / (duration?:0.1f).toFloat()
+                                                    if ((duration
+                                                            ?: 0) > 0
+                                                    ) currentPosition.toFloat() / (duration
+                                                        ?: 0.1f).toFloat()
                                                     else 0f
                                                 },
                                                 modifier = Modifier.fillMaxWidth()
@@ -339,11 +353,12 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    ){
-                            innerPadding ->
-                        NavHost(navController = navController,
+                    ) { innerPadding ->
+                        NavHost(
+                            navController = navController,
                             startDestination = "login",
-                            modifier = Modifier.padding(innerPadding))
+                            modifier = Modifier.padding(innerPadding)
+                        )
                         {
                             composable("login") {
                                 val context = LocalContext.current
@@ -353,7 +368,7 @@ class MainActivity : ComponentActivity() {
                                         imageUri = loginInfo.imageUri
                                         userKey = loginInfo.userKey
 
-                                        if (imageUri == null ||username == "") { // Modifiable si on veut autoriser la connexion sans image
+                                        if (imageUri == null || username == "") { // Modifiable si on veut autoriser la connexion sans image
                                             Toast.makeText(
                                                 context, "Pick an image and a username!",
                                                 Toast.LENGTH_SHORT
@@ -380,7 +395,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("equalizer") {
-                                val audioSessionId by playScreenViewModel.audioSessionId.observeAsState(0)
+                                val audioSessionId by playScreenViewModel.audioSessionId.observeAsState(
+                                    0
+                                )
                                 EqualizerScreen(
                                     equalizerViewModel = equalizerViewModel,
                                     audioSessionId = audioSessionId ?: 0
@@ -396,18 +413,18 @@ class MainActivity : ComponentActivity() {
                                     application = this@MainActivity.application,
                                     currentUsername = username,
                                     playScreenViewModel = playScreenViewModel,
-                                    onSongClicked={idx,queue->
-                                        playScreenViewModel.changeQueue(queue,idx)
-                                        showSongBar=false
+                                    onSongClicked = { idx, queue ->
+                                        playScreenViewModel.changeQueue(queue, idx)
+                                        showSongBar = false
                                         navController.navigate("musicPlayer")
 
                                     }
                                 )
                             }
-                            composable("musicPlayer"){
+                            composable("musicPlayer") {
                                 PlayScreen(
                                     onArrowClicked = {
-                                        showSongBar=true
+                                        showSongBar = true
                                         navController.popBackStack()
                                     },
                                     playScreenViewModel = playScreenViewModel
@@ -433,24 +450,24 @@ class MainActivity : ComponentActivity() {
     }
 
     // Once intent is done (override function and call its super method)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?){
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         // Super method call
         super.onActivityResult(requestCode, resultCode, intent)
-        
+
         // If the aintent was to pick an image and was successful
-        if (requestCode == IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK){
+        if (requestCode == IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK) {
             // Get the intent's data
             val selectedImageUri = intent?.data
             // If URI is not null => update the profile image
-            if (selectedImageUri != null){
+            if (selectedImageUri != null) {
                 updateProfileImage(selectedImageUri)
-            } 
+            }
         }
     }
 
     // Update the profile image URI (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
-    private fun updateProfileImage(newImageUri: Uri){
-        
+    private fun updateProfileImage(newImageUri: Uri) {
+
         // For transformations such as scaling
         val matrix = Matrix()
         // Get the image bitmap from the URI
@@ -459,10 +476,12 @@ class MainActivity : ComponentActivity() {
         val ratio: Float = 13F
         val imageBitmapScaled = Bitmap.createScaledBitmap(
             imageBitmap, (imageBitmap.width / ratio).toInt(),
-            (imageBitmap.height / ratio).toInt(), false)
+            (imageBitmap.height / ratio).toInt(), false
+        )
         imageBitmap = Bitmap.createBitmap(
             imageBitmapScaled, 0, 0, (imageBitmap.width / ratio).toInt(),
-            (imageBitmap.height / ratio).toInt(), matrix, true)
+            (imageBitmap.height / ratio).toInt(), matrix, true
+        )
         // Convert the bitmap to a byte array and compress it as PNG
         val stream = ByteArrayOutputStream()
         imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -477,8 +496,41 @@ class MainActivity : ComponentActivity() {
             imageUri = newImageUri
             // Update the photo_URL in the Realtime Database  
             profileRef.child(userKey).child("photo_URL").setValue(
-                storageRef.toString() + "ProfileImages/" + username + ".jpg")
+                storageRef.toString() + "ProfileImages/" + username + ".jpg"
+            )
         }
     }
+
+
+
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+
+        if(messageEvent.path == "PlayPause"){
+            playScreenViewModel.onPlayPauseClick()
+        }
+        if(messageEvent.path == "LeftArrow"){
+            playScreenViewModel.onLeftArrowClick()
+        }
+        if(messageEvent.path == "RightArrow"){
+            playScreenViewModel.onRightArrowClick()
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Wearable.getMessageClient(this).addListener(this)
+        Log.d("Main Activity","addListener attached")
+    }
+    override fun onPause() {
+        super.onPause()
+        Wearable.getMessageClient(this).removeListener(this)
+        Log.d("Main Activity","removedListener attached")
+    }
+
+
+
 }
+
+
 

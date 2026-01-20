@@ -13,7 +13,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.MarqueeAnimationMode.Companion.Immediately
+import androidx.compose.foundation.MarqueeAnimationMode.Companion.WhileFocused
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -145,9 +148,16 @@ fun PlayScreen(
                 Text(
                     text = title,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .basicMarquee(
+                            iterations = Int.MAX_VALUE,
+                            animationMode = Immediately,
+                            repeatDelayMillis = 200,
+                            velocity =  20.dp
+                        ),// Make the text auto-scrollable
                     minLines = 2,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    //overflow = TextOverflow.Ellipsis
                 )
             }
 
