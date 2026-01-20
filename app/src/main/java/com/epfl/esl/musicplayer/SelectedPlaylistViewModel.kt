@@ -24,6 +24,7 @@ import java.io.File
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 
 

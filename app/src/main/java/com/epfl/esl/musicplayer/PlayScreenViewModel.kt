@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,7 @@ class PlayScreenViewModel (
     private val dataClient : DataClient
 ) : AndroidViewModel(application) {
 
-
+    val context = getApplication<Application>().applicationContext
     private val audioPlayer = AudioPlayerService(application.applicationContext)
 
     // Service variables
@@ -258,14 +259,20 @@ class PlayScreenViewModel (
         }
     }
 
-    fun addToQueue(index: Int) {
+    fun addToQueue(songRef: String) {
         // Add music right after the current track
-        val track = originalPlaylist[index]
+        //val track = originalPlaylist[index]
         val newPlaylist = currentPlaylist.toMutableList()
 
         // Insert at position currentTrackIndex + 1 (right after current track)
-        newPlaylist.add(currentTrackIndex + 1, track)
+        newPlaylist.add(currentTrackIndex + 1, songRef)
         currentPlaylist = newPlaylist
+        if (originalPlaylist.size==0){
+            Toast.makeText(context, "Launch a queue before adding", Toast.LENGTH_SHORT).show()
+        }
+        else{
+            Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun changeQueue(queue:List<String>,idx:Int){

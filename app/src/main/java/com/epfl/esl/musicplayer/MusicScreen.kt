@@ -15,7 +15,7 @@ fun MusicScreen(
     modifier: Modifier = Modifier,
     currentUsername: String = "",
     onSongClicked:(Int,List<String>)->Unit,
-    onAddQueue: (Int)->Unit,
+    onAddQueue: (String)->Unit,
     playScreenViewModel: PlayScreenViewModel = viewModel()
 ) {
     var window by remember{ mutableStateOf<String?>("playlist")}

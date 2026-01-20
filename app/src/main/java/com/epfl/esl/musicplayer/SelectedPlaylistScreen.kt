@@ -64,7 +64,7 @@ fun SelectedPlaylistScreen(
     onSongClicked:(Int,List<String>)->Unit,
     modifier: Modifier = Modifier,
     currentUsername: String,
-    onAddQueue:(Int)->Unit
+    onAddQueue:(String)->Unit
 ) {
     val context = LocalContext.current
     
@@ -152,7 +152,7 @@ fun SelectedPlaylistScreen(
                             .fillMaxWidth()
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center  // ✅ AJOUTE
+                        horizontalArrangement = Arrangement.Center  //
                     ){
                         Text(
                             text = playlistName,
@@ -227,9 +227,9 @@ fun SelectedPlaylistScreen(
                         )
 
                         IconButton(onClick = {
-                            onAddQueue(index)
-                            // STILL TO BE CORRECTED AFTER MERGE
-                            Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+                            onAddQueue(newQueue[index])
+
+
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowCircleRight,

@@ -402,8 +402,8 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate("musicPlayer")
 
                                     },
-                                    onAddQueue = {idx->
-                                        playScreenViewModel.addToQueue(idx)
+                                    onAddQueue = {song->
+                                        playScreenViewModel.addToQueue(song)
 
                                     }
                                 )
