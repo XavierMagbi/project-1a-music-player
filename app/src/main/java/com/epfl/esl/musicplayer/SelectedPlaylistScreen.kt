@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -98,7 +99,7 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
-                                .width(150.dp)
+                                .size(150.dp)
                                 .clickable(
                                     onClick = {
                                         // Open image picker
@@ -107,7 +108,6 @@ fun SelectedPlaylistScreen(
                                         resultLauncher.launch(intent)
                                     }
                                 ),
-                            contentScale = ContentScale.Crop
                         )
                     } else {
                         Image(
@@ -116,7 +116,7 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
-                                .width(150.dp)
+                                .size(150.dp)
                                 .clickable(
                                     onClick = {
                                         val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -124,7 +124,6 @@ fun SelectedPlaylistScreen(
                                         resultLauncher.launch(intent)
                                     }
                                 ),
-                            contentScale = ContentScale.Crop
                         )
                     }
                 }
