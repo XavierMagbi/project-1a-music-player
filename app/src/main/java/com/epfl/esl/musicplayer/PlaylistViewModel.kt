@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.database.FirebaseDatabase
 import android.app.Application
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -13,7 +14,8 @@ import androidx.lifecycle.ViewModelProvider
 data class playlistMetadata (
     val title: String? = "",
     val creator: String? = "",
-    val id: String? = ""
+    val id: String? = "",
+    val imageUri: Uri? = null
 )
 
 //Week 5: ViewModels and System Services (slide 8)
@@ -53,8 +55,12 @@ class PlaylistViewModel(
                 val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
                 val id = child.key ?: ""
 
+                // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
+                val photoUrlString = child.child("photo_URL").getValue(String::class.java)
+                val imageUri = if (photoUrlString != null) Uri.parse(photoUrlString) else null
+
                 if (playlistCreator == currentUsername) {
-                    results.add(playlistMetadata(playlistName, playlistCreator, id))
+                    results.add(playlistMetadata(playlistName, playlistCreator, id, imageUri))
                 }
             }
 
@@ -109,8 +115,12 @@ class PlaylistViewModel(
                 val playlistCreator = child.child("author").getValue(String::class.java) ?: ""
                 val id = child.key ?: ""
 
+                // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
+                val photoUrlString = child.child("photo_URL").getValue(String::class.java)
+                val imageUri = if (photoUrlString != null) Uri.parse(photoUrlString) else null
+
                 if (friendUsernames.contains(playlistCreator)) {
-                    results.add(playlistMetadata(playlistName, playlistCreator, id))
+                    results.add(playlistMetadata(playlistName, playlistCreator, id, imageUri))
                 }
             }
             _friendsPlaylists.value = results

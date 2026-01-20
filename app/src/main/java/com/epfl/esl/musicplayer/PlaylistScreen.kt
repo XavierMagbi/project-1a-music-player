@@ -1,12 +1,16 @@
 package com.epfl.esl.musicplayer
 
+import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,8 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 
 @Composable
 fun PlaylistScreen(
@@ -83,6 +89,23 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (myPlaylists[index].imageUri != null){
+                                AsyncImage(
+                                    model = myPlaylists[index].imageUri,
+                                    contentDescription = "Playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    contentDescription = "Default playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            }
                             Text(
                                 text = "${myPlaylists[index].title ?: "Unknown title"} by ${myPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
@@ -120,6 +143,23 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (friendsPlaylists[index].imageUri != null){
+                                AsyncImage(
+                                    model = friendsPlaylists[index].imageUri,
+                                    contentDescription = "Playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    contentDescription = "Default playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            }
                             Text(
                                 text = "${friendsPlaylists[index].title ?: "Unknown title"} by ${friendsPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
