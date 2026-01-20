@@ -316,7 +316,7 @@ fun PlayScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    playScreenViewModel.playCurrentTrack(index)
+                                    playScreenViewModel.playCurrentTrack(queueIndex)
                                     showQueue = false
                                 }
                         ) {

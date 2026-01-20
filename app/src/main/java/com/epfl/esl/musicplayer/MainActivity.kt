@@ -401,6 +401,10 @@ class MainActivity : ComponentActivity() {
                                         showSongBar=false
                                         navController.navigate("musicPlayer")
 
+                                    },
+                                    onAddQueue = {idx->
+                                        playScreenViewModel.addToQueue(idx)
+
                                     }
                                 )
                             }

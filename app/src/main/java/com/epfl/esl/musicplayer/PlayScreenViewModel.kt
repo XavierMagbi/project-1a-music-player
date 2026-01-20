@@ -54,7 +54,7 @@ class PlayScreenViewModel (
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
-    val originalPlaylist = emptyList<String>()
+    var originalPlaylist by mutableStateOf(emptyList<String>())
     var currentPlaylist by mutableStateOf(originalPlaylist)
     var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
 
@@ -68,8 +68,12 @@ class PlayScreenViewModel (
 
 
     suspend fun hasConnectedWatch(context: Context): Boolean {
-        val nodes = Wearable.getNodeClient(context).connectedNodes.await()
-        return nodes.isNotEmpty()
+        try {
+            val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+            return nodes.isNotEmpty()
+        }catch (e:Exception){
+            return false
+        }
     }
 
      fun sendSongDataToWear(dataClient: DataClient) {
@@ -265,6 +269,7 @@ class PlayScreenViewModel (
     }
 
     fun changeQueue(queue:List<String>,idx:Int){
+        originalPlaylist=queue
         currentPlaylist=queue
         currentTrackIndex=idx
         playCurrentTrack()
