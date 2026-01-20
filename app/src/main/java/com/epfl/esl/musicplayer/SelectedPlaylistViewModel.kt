@@ -209,6 +209,12 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
             }
         }
     }
+
+    // ==== To rename playlist ====
+    fun updatePlaylistName(newName: String) {
+        _playlistName.value = newName  // Locally update
+        playlistsRef.child(playlistId).child("name").setValue(newName)  // Remote update
+    }
 }
 
 
