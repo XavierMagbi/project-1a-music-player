@@ -27,9 +27,11 @@ import androidx.lifecycle.AndroidViewModel
 import java.io.ByteArrayOutputStream
 
 
-class SelectedPlaylistViewModel(application : Application, playlistId: String) : AndroidViewModel(application){
+class SelectedPlaylistViewModel(application : Application, playlistId: String, currentUsername: String) : AndroidViewModel(application){
     val context = getApplication<Application>().applicationContext
+    // To be able to use the given parameters
     private val playlistId = playlistId
+    private val currentUsername = currentUsername
 
     private val database = FirebaseDatabase.getInstance()
     private val playlistsRef = database.getReference("Playlists")
@@ -59,6 +61,9 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
     private val _playlistImageUri = MutableLiveData<Uri?>(null)
     val playlistImageUri: LiveData<Uri?> = _playlistImageUri   
 
+    private val _isMyPlaylist = MutableLiveData<Boolean>(false)
+    val isMyPlaylist: LiveData<Boolean> = _isMyPlaylist
+
     init {
         // Start listening for playlist changes
         listenToPlaylist(playlistId)
@@ -71,6 +76,9 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         playlistListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 _playlistName.value =  snapshot.child("name").getValue(String::class.java)
+
+               val playlistAuthor = snapshot.child("author").getValue(String::class.java)
+               _isMyPlaylist.value = (playlistAuthor == currentUsername)
 
                 // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
                 val photoUrlString = snapshot.child("photo_URL").getValue(String::class.java)
@@ -194,9 +202,11 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         val playlistImageRef = storage.reference.child("PlaylistImages/" + playlistId + ".jpg")
         val uploadPlaylistImage = playlistImageRef.putBytes(imageByteArray)
 
-        playlistImageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-            _playlistImageUri.value = downloadUrl  // Update LiveData with new URI
-            playlistsRef.child(playlistId).child("photo_URL").setValue(downloadUrl.toString())  // Update in Realtime Database
+        uploadPlaylistImage.addOnSuccessListener { taskSnapshot ->
+            playlistImageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                _playlistImageUri.value = downloadUrl  // Update LiveData
+                playlistsRef.child(playlistId).child("photo_URL").setValue(downloadUrl.toString())  // Update URL
+            }
         }
     }
 }
@@ -205,13 +215,14 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
 
 class SelectedPlaylistViewModelFactory(
     private val playlistId: String,
-    private val application: Application
+    private val application: Application,
+    private val currentUsername: String
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SelectedPlaylistViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SelectedPlaylistViewModel( playlistId =playlistId, application = application ) as T
+            return SelectedPlaylistViewModel( playlistId =playlistId, application = application, currentUsername = currentUsername) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

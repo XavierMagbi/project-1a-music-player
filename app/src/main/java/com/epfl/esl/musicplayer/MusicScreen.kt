@@ -34,7 +34,8 @@ fun MusicScreen(
             SelectedPlaylistScreen(
                 application = application,
                 playlistId = playlistId,
-                onSongClicked = onSongClicked
+                onSongClicked = onSongClicked,
+                currentUsername = currentUsername
             )
         }
 

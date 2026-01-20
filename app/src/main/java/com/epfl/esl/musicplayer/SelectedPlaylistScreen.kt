@@ -56,11 +56,12 @@ fun SelectedPlaylistScreen(
     application: Application,
     playlistId: String,
     onSongClicked:(Int,List<String>)->Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentUsername: String
 ) {
     val context = LocalContext.current
     
-    val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application))
+    val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application,currentUsername))
     val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
@@ -69,6 +70,8 @@ fun SelectedPlaylistScreen(
 
     // For playlist picture
     val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)
+    // For access to change playlist picture (cannot change Friends' playlists)
+    val isMyPlaylist by selectedPlaylistViewModel.isMyPlaylist.observeAsState(initial = false)
 
     // From EE-490(g) labs to get result from intent
     val resultLauncher = rememberLauncherForActivityResult(
@@ -102,10 +105,12 @@ fun SelectedPlaylistScreen(
                                 .size(150.dp)
                                 .clickable(
                                     onClick = {
-                                        // Open image picker
-                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                        intent.type = "image/*"
-                                        resultLauncher.launch(intent)
+                                        if (isMyPlaylist){
+                                            // Open image picker
+                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                            intent.type = "image/*"
+                                            resultLauncher.launch(intent)
+                                        }
                                     }
                                 ),
                         )
@@ -119,9 +124,12 @@ fun SelectedPlaylistScreen(
                                 .size(150.dp)
                                 .clickable(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                        intent.type = "image/*"
-                                        resultLauncher.launch(intent)
+                                        if (isMyPlaylist){
+                                            // Open image picker
+                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                            intent.type = "image/*"
+                                            resultLauncher.launch(intent)
+                                        }
                                     }
                                 ),
                         )
