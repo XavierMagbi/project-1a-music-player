@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -226,10 +227,26 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        if (isMyPlaylist) {
+                            IconButton(onClick = {
+                                selectedPlaylistViewModel.deleteSong(
+                                    filteredSongs[index].linkGS ?: ""
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Deleted song from playlist",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.RemoveCircle,
+                                    contentDescription = "Delete from playlist button"
+                                )
+                            }
+                        }
+
                         IconButton(onClick = {
                             onAddQueue(newQueue[index])
-
-
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowCircleRight,

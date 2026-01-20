@@ -17,7 +17,8 @@ import androidx.lifecycle.ViewModelProvider
 data class musicMetadata (
     val title: String? = "",
     val image: ByteArray? = null,
-    val link: String? = ""
+    val link: String? = "",
+    val linkGS: String? = ""
 )
 
 //Week 5: ViewModels and System Services (slide 8)

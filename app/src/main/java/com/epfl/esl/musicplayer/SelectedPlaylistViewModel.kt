@@ -149,7 +149,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                         musicMetadata(
                             title = title,
                             image = coverImage,
-                            link = fileRef.downloadUrl.toString() // optional, can keep the URI
+                            link = fileRef.downloadUrl.toString(),
+                            linkGS = gsPath
                         )
                     )
 
@@ -176,6 +177,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                 }
         }
     }
+
 
     // ==== To update playlist picture ====
 
@@ -215,6 +217,13 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
     fun updatePlaylistName(newName: String) {
         _playlistName.value = newName  // Locally update
         playlistsRef.child(playlistId).child("name").setValue(newName)  // Remote update
+    }
+
+    // ==== To delete song from playlist ====
+    fun deleteSong(linkGS: String) {
+        Log.d("SelectedPlaylistVM", "Deleting song with link: $linkGS")
+        val updatedTracks = _song_id.value?.filter { it != linkGS } ?: return
+        playlistsRef.child(playlistId).child("tracks").setValue(updatedTracks)
     }
 }
 
