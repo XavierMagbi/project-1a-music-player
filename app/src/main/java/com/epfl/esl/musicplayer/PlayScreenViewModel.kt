@@ -1,6 +1,7 @@
 package com.epfl.esl.musicplayer
 
 import android.app.Application
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.util.Log
@@ -26,6 +27,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataRequest
 import kotlinx.coroutines.tasks.await
+import com.google.android.gms.wearable.Wearable
 import java.io.ByteArrayOutputStream
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -62,9 +64,23 @@ class PlayScreenViewModel (
     private val _repeatMode = MutableLiveData(0)
     val repeatMode: LiveData<Int> = _repeatMode
 
+
+
+
+    suspend fun hasConnectedWatch(context: Context): Boolean {
+        val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+        return nodes.isNotEmpty()
+    }
+
      fun sendSongDataToWear(dataClient: DataClient) {
-        //  viewModelScope for a lifecycle-aware background task
+
+
+
         viewModelScope.launch {
+
+            val ctx = getApplication<Application>().applicationContext
+
+
             val currentTitle = title.value ?: "No Title"
             val currentlyPlaying = isPlaying.value ?: false
             val coverArtBytes = coverImage.value
@@ -72,6 +88,11 @@ class PlayScreenViewModel (
             val duration = duration.value
 
             Log.d("PlayScreenViewModel", "Preparing to send song data to watch: '$currentTitle'")
+
+            if (!hasConnectedWatch(ctx)) {
+                Log.d("PlayScreenViewModel", "No connected watch node -> skip sending")
+                return@launch
+            }
 
             try {
                 // Use a specific path for song info
@@ -83,14 +104,15 @@ class PlayScreenViewModel (
                     dataMap.putInt("duration",duration)
                     // If coverArtBytes is not null, put it directly into the dataMap.
                     if (coverArtBytes != null) {
-                        dataMap.putByteArray("albumArt", coverArtBytes)
+                        //dataMap.putByteArray("albumArt", coverArtBytes)
                     }
                     asPutDataRequest()
                 }
 
                 putDataRequest.setUrgent()
 
-                dataClient.putDataItem(putDataRequest).await()
+                val result = dataClient.putDataItem(putDataRequest).await()
+                Log.d("PhoneTx", "putDataItem OK uri=${result.uri}")
 
                 Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
             } catch (e: Exception) {
@@ -121,8 +143,8 @@ class PlayScreenViewModel (
             playCurrentTrack()
         } else {
             audioPlayer.rewind()
-            sendSongDataToWear(dataClient)
         }
+        sendSongDataToWear(dataClient)
     }
     // Right arrow button
     fun onRightArrowClick() {

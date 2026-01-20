@@ -8,6 +8,7 @@ package com.epfl.esl.musicplayer.presentation
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -90,15 +91,19 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     override fun onResume() {
         super.onResume()
         Wearable.getDataClient(this).addListener(this)
+        Log.d("Main Activity","addListener attached")
     }
     override fun onPause() {
         super.onPause()
         Wearable.getDataClient(this).removeListener(this)
+        Log.d("Main Activity","removedListener attached")
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
+        Log.d("Main Activity","rx")
         dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/songInfo" }
             .forEach { event ->
+
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
                 // Extract song title using the correct key
