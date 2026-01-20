@@ -1,8 +1,12 @@
 package com.epfl.esl.musicplayer
 
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
@@ -47,7 +52,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -65,9 +69,13 @@ import coil.compose.AsyncImage
 import com.epfl.esl.musicplayer.ui.theme.MusicPlayerTheme
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.Wearable
+import com.google.firebase.Firebase
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import com.google.firebase.database.database
+import com.google.firebase.storage.storage
 
 class MainActivity : ComponentActivity() {
     private lateinit var dataClient: DataClient
@@ -76,6 +84,12 @@ class MainActivity : ComponentActivity() {
     private var uriString by mutableStateOf("")
     private var userKey by mutableStateOf("")
 
+    // Request code for image picker intent (to update user image)
+    private val IMAGE_PICKER_REQUEST_CODE = 100
+
+    // To update user image
+    private val storageRef = Firebase.storage.reference
+    private val profileRef = Firebase.database.getReference("Profiles")
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +115,7 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     drawerContent = {
                         ModalDrawerSheet {
+                            // Sign off button
                             NavigationDrawerItem(
                                 label = {
                                     Text("Sign out")
@@ -118,6 +133,23 @@ class MainActivity : ComponentActivity() {
                                                 inclusive = true
                                             }
                                         }
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+                            // Update profile picture
+                            NavigationDrawerItem(
+                                label = {
+                                    Text("Update profile picture")
+                                },
+                                icon = {
+                                    Icon(Icons.Default.AccountBox, contentDescription = null)
+                                },
+                                selected = false,
+                                onClick = {
+                                    // Call as a coroutine to avoid blocking main thread
+                                    scope.launch {
+                                        openImagePicker()
                                     }
                                 },
                                 modifier = Modifier.padding(top = 16.dp)
@@ -387,6 +419,65 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    // ==== To update user picture ====
+
+    // Launch intent
+    private fun openImagePicker() {
+        // Intent to open phone's image gallery and pick an image
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        // Start the activity with a request code to identify the result later
+        startActivityForResult(intent, IMAGE_PICKER_REQUEST_CODE)
+    }
+
+    // Once intent is done (override function and call its super method)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?){
+        // Super method call
+        super.onActivityResult(requestCode, resultCode, intent)
+        
+        // If the aintent was to pick an image and was successful
+        if (requestCode == IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK){
+            // Get the intent's data
+            val selectedImageUri = intent?.data
+            // If URI is not null => update the profile image
+            if (selectedImageUri != null){
+                updateProfileImage(selectedImageUri)
+            } 
+        }
+    }
+
+    // Update the profile image URI (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
+    private fun updateProfileImage(newImageUri: Uri){
+        
+        // For transformations such as scaling
+        val matrix = Matrix()
+        // Get the image bitmap from the URI
+        var imageBitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, newImageUri)
+        // Scale down the image to reduce size before upload
+        val ratio: Float = 13F
+        val imageBitmapScaled = Bitmap.createScaledBitmap(
+            imageBitmap, (imageBitmap.width / ratio).toInt(),
+            (imageBitmap.height / ratio).toInt(), false)
+        imageBitmap = Bitmap.createBitmap(
+            imageBitmapScaled, 0, 0, (imageBitmap.width / ratio).toInt(),
+            (imageBitmap.height / ratio).toInt(), matrix, true)
+        // Convert the bitmap to a byte array and compress it as PNG
+        val stream = ByteArrayOutputStream()
+        imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val imageByteArray = stream.toByteArray()
+
+        // Upload new image to Firebase Storage
+        val profileImageRef = storageRef.child("ProfileImages/" + username + ".jpg")
+        val uploadProfileImage = profileImageRef.putBytes(imageByteArray)
+
+        uploadProfileImage.addOnSuccessListener { taskSnapshot ->
+            // Update the image URI
+            imageUri = newImageUri
+            // Update the photo_URL in the Realtime Database  
+            profileRef.child(userKey).child("photo_URL").setValue(
+                storageRef.toString() + "ProfileImages/" + username + ".jpg")
         }
     }
 }
