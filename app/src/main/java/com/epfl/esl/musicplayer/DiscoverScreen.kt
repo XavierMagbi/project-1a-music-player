@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.asImageBitmap
@@ -56,11 +57,13 @@ fun DiscoverScreen(
     modifier: Modifier = Modifier,
     currentUsername: String = "",
     onSongClicked:(List<String>,Int)->Unit,
+    onAddQueue:(String)->Unit,
     discoverViewModel: DiscoverViewModel = viewModel (
         factory = DiscoverViewModelFactory(
             LocalContext.current.applicationContext as android.app.Application,
             currentUsername)
     )
+
 ){
     // For research query
     val searchQuery by discoverViewModel.searchQuery.observeAsState("")
@@ -145,9 +148,20 @@ fun DiscoverScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = Icons.Filled.Add,
                             contentDescription = "Add to playlist",
                             tint = MaterialTheme.colorScheme.error
+                        )
+
+                    }
+
+                    IconButton(
+                        onClick = {
+                        onAddQueue(filteredSongs[index].datapath)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowCircleRight,
+                            contentDescription = "Add to queue"
                         )
                     }
 
@@ -204,6 +218,7 @@ fun AddSongToPlaylistDialog(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(text = playlist.title?:"")
+
                         }
                     }
                 }

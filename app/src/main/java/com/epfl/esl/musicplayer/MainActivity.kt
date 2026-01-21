@@ -417,6 +417,9 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
 
                                         navController.navigate("musicPlayer")
 
+                                    },
+                                    onAddQueue = {song->
+                                        playScreenViewModel.addToQueue(song)
                                     }
                                 )
                             }
