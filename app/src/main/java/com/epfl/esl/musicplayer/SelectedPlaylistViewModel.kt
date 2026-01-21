@@ -111,14 +111,15 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
             _songs.value ?: emptyList()
         } else {
             _songs.value?.filter { song ->
-                song.title!!.lowercase().startsWith(query.lowercase())
+                (song.title?:"").lowercase().startsWith(query.lowercase())
             } ?: emptyList()
         }
         _filteredSongs.value = filtered
     }
 
     private fun fetchSongsFromGsPaths(songPaths: List<String>) {
-        val songList = mutableListOf<musicMetadata>()
+        val songList = MutableList<musicMetadata>(songPaths.size){ musicMetadata() }
+        _songs.value=List<musicMetadata>(songPaths.size){ musicMetadata(title = null) }
         //_newQueue.value= emptyList() // reset the queue for this playlist
 
         if (songPaths.isEmpty()) {
@@ -127,7 +128,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
             return
         }
 
-        songPaths.forEach { gsPath ->
+        songPaths.forEachIndexed() { idx, gsPath ->
             val fileRef = FirebaseStorage.getInstance().getReferenceFromUrl(gsPath)
 
             // Download MP3 directly to cache directory
@@ -145,21 +146,27 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                     retriever.release()
 
                     // Add to songs list
-                    songList.add(
-                        musicMetadata(
-                            title = title,
-                            image = coverImage,
-                            link = fileRef.downloadUrl.toString(),
-                            linkGS = gsPath,
-                            datapath = tempFile.absolutePath
-                        )
+                    val tempMusic = musicMetadata(
+                        title = title,
+                        image = coverImage,
+                        link = fileRef.downloadUrl.toString(),
+                        linkGS = gsPath,
+                        datapath = tempFile.absolutePath
                     )
 
                     // Add to playback queue
-                    //_newQueue.value =_newQueue.value + (tempFile.absolutePath)
+
+                    try {
+                        _songs.value = _songs.value.toMutableList().apply {
+                            this[idx] = tempMusic
+                        }
+                    } catch (e:Exception){
+                        Log.d("PlaylistFetch","list changed!")
+                    }
+
 
                     // Update LiveData for UI
-                    _songs.value = songList.toList()
+
                     filterSongs(_searchQuery.value ?: "")
 
                 }
@@ -243,6 +250,16 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
         currentTracks.removeAt(indexToDelete)
         // Update in remote
         playlistsRef.child(playlistId).child("tracks").setValue(currentTracks)
+    }
+
+    fun isPlaylistLoaded():Boolean{
+
+        _songs.value.forEach{song->
+            if (song.title==null){
+                return false
+            }
+        }
+        return true
     }
 }
 

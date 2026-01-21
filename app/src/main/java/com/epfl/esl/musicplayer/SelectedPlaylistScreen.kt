@@ -200,7 +200,14 @@ fun SelectedPlaylistScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
-                            .clickable( onClick = {onSongClicked(index,selectedPlaylistViewModel.getSongIdList())}),
+                            .clickable( onClick = {
+                                if (selectedPlaylistViewModel.isPlaylistLoaded()) {
+                                    onSongClicked(index, selectedPlaylistViewModel.getSongIdList())
+                                }
+                                else{
+                                    Toast.makeText(context,"Wait for playlist to load",Toast.LENGTH_SHORT).show()
+                                }
+                            }),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (filteredSongs[index].image != null) {
@@ -223,7 +230,7 @@ fun SelectedPlaylistScreen(
                         }
 
                         Text(
-                            text = filteredSongs[index].title ?: "Unknown title",
+                            text = filteredSongs[index].title ?: "...",
                             modifier = Modifier.weight(1f)
                         )
 
@@ -246,7 +253,12 @@ fun SelectedPlaylistScreen(
                         }
 
                         IconButton(onClick = {
-                            onAddQueue(filteredSongs[index].datapath)
+                            if (selectedPlaylistViewModel.isPlaylistLoaded()) {
+                                onAddQueue(filteredSongs[index].datapath)
+                            }
+                            else{
+                                Toast.makeText(context,"Wait for song to load",Toast.LENGTH_SHORT).show()
+                            }
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowCircleRight,
