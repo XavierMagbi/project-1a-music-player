@@ -10,12 +10,12 @@ import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.view.WindowManager
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.MarqueeAnimationMode.Companion.Immediately
-import androidx.compose.foundation.MarqueeAnimationMode.Companion.WhileFocused
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -61,19 +61,24 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import kotlinx.coroutines.cancel
 
 
 class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var bitmap by mutableStateOf<Bitmap?>(null)
     private var songTitle by mutableStateOf("Hello World!")
+    private var currentSong by mutableStateOf(songTitle)
     private var isPlaying by mutableStateOf(false)
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
     private lateinit var sensorManager: SensorManager // Variables to use Gyroscope for wrist shaking
     private var gyro: Sensor? = null
     private lateinit var wristFlickGyroDetector: WristFlickGyroDetector
+    // A scope tied to the Activity
+    private val screenScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var turnOffJob: Job? = null
 
     private lateinit var wearPlayViewModel : WearPlayViewModel
 
@@ -114,10 +119,14 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     flipButton = {isPlaying=!isPlaying},
                     wearPlayViewModel = wearPlayViewModel
 
-
                 )
             }
         }
+
+        //if (currentSong == songTitle){ pulseScreenFor(4_000L) }
+        // Turn on the screen for 4 seconds if the screen is awake
+
+
     }
 
     override fun onResume() {
@@ -170,6 +179,23 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
                 currentPosition = dataMap.getInt("currentPosition", 0)
             }
+    }
+
+    // UNUSED FOR NOW CHECK WHEN IMPLEMENTED
+    private fun pulseScreenFor(delayMs: Long = 4_000L) {
+        // Keep screen on now
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        Log.d("WearScreen", "KEEP_SCREEN_ON enabled")
+
+        // Cancel any previously scheduled "turn off"
+        turnOffJob?.cancel()
+
+        // Schedule clearing the flag after delay
+        turnOffJob = screenScope.launch {
+            delay(delayMs)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            Log.d("WearScreen", "KEEP_SCREEN_ON cleared (system may turn screen off)")
+        }
     }
 }
 
@@ -307,12 +333,19 @@ fun HomeScreen(
 }
 
 
+
 // Function to format milliseconds into MM:SS
 fun formatTime2(milliseconds: Int): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds.toLong())
     val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds.toLong()) % 60
     return String.format("%02d:%02d", minutes, seconds)
 }
+
+
+
+
+
+
 
 @Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 
