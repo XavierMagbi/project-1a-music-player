@@ -220,10 +220,17 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
     }
 
     // ==== To delete song from playlist ====
+    // Function is simplified to delete first instance (in case of multiple times the same music) of concerned music in playlist
+    // Would require to rework data structure of Realtime Database otherwise (limited time in project)
     fun deleteSong(linkGS: String) {
-        Log.d("SelectedPlaylistVM", "Deleting song with link: $linkGS")
-        val updatedTracks = _song_id.value?.filter { it != linkGS } ?: return
-        playlistsRef.child(playlistId).child("tracks").setValue(updatedTracks)
+        // Get all playlist songs
+        val currentTracks = _song_id.value?.toMutableList() ?: return
+        // Spot the first index of the song to delete
+        val indexToDelete = currentTracks.indexOfFirst { it == linkGS }
+        // Remove only the first occurrence
+        currentTracks.removeAt(indexToDelete)
+        // Update in remote
+        playlistsRef.child(playlistId).child("tracks").setValue(currentTracks)
     }
 }
 
