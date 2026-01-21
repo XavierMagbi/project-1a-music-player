@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
@@ -148,7 +149,7 @@ fun DiscoverScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Add,
+                            imageVector = Icons.Filled.AddCircle,
                             contentDescription = "Add to playlist",
                             tint = MaterialTheme.colorScheme.error
                         )
