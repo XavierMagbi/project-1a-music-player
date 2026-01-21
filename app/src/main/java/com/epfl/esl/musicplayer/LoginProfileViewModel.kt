@@ -6,6 +6,7 @@ import android.graphics.Matrix
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -28,6 +29,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class LoginProfileViewModel : ViewModel(){
 
@@ -195,7 +199,7 @@ class LoginProfileViewModel : ViewModel(){
 
 
 
-    fun fetchProfile() {
+    fun fetchProfile(context: Context) {
         profileRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 for (user in dataSnapshot.children) {
@@ -209,6 +213,22 @@ class LoginProfileViewModel : ViewModel(){
                             _password.value == passwordDatabase) {
                             key = user.key.toString()
                             _profilePresent.value = true
+                            
+                            // For StayConnected feature
+                            // Use coroutine to avoid blocking main thread
+                            CoroutineScope(Dispatchers.IO).launch {
+                                // Get the database instance/generate it if does not exist yet
+                                val userDb = DatabaseProvider.getDatabase(context)
+                                userDb.userDao().deleteUser() // Clear previous user
+                                userDb.userDao().insertUser(  // Insert the logged in user
+                                    User(
+                                        id = 0,
+                                        username = _username.value ?: "",
+                                        userKey = key
+                                    )
+                                )
+                                Log.d("LoginProfileVM", "User stored in ROOM DB")
+                            }
                             break
                         }
                     }

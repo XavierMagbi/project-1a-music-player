@@ -87,7 +87,7 @@ fun LoginProfileScreen(
             onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
             onSignInButtonClicked = {
                 isLoading = true
-                loginProfileViewModel.fetchProfile()
+                loginProfileViewModel.fetchProfile(context)
             },
             onSignUpButtonClicked = {
                 loginProfileViewModel.sendDataToFireBase(context)

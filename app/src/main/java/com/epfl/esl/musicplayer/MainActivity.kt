@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +81,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.google.firebase.database.database
 import com.google.firebase.storage.storage
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener {
     private lateinit var dataClient: DataClient
@@ -104,8 +106,38 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
 
         dataClient = Wearable.getDataClient(this)
 
+        var initialRoute = "login" // Default start at login
+        var shouldShowBarsInit = false // So top and bottom bars are shown in direct login too
+
+        // Wait for ROOM DB to respond
+        runBlocking {
+            val userDb = DatabaseProvider.getDatabase(this@MainActivity) // Get instance
+            val storedUser = userDb.userDao().getUser() // Fetch saved user
+            if (storedUser != null){
+                initialRoute = "home" // If a user is stored, start at home
+                username = storedUser.username // Get username as we do not go through login
+                userKey = storedUser.userKey   // Get userKey as we do not go through login
+                shouldShowBarsInit = true // Show bars if direct login
+                Log.d("MainActivity", "User auto-logged in: ${username}") // For debug
+            }
+        }
+
         setContent {
             MusicPlayerTheme {
+                // Load profile image from Firebase Storage in case of direct login
+                if (username.isNotEmpty()) {
+                    LaunchedEffect(username) {
+                        // Get reference to profile image
+                        val profileImageRef = Firebase.storage.reference
+                            .child("ProfileImages/$username.jpg")
+
+                        // Get image URL
+                        profileImageRef.downloadUrl.addOnSuccessListener { uri ->
+                            imageUri = uri
+                        }
+                    }
+                }
+
                 val equalizerViewModel: EqualizerViewModel = viewModel()
                 playScreenViewModel =  viewModel {
                     PlayScreenViewModel(
@@ -144,6 +176,10 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                                 inclusive = true
                                             }
                                         }
+                                        // Delete stored user in ROOM DB
+                                        val userDb = DatabaseProvider.getDatabase(this@MainActivity)
+                                        userDb.userDao().deleteUser()
+                                        Log.d("MainActivity", "User deleted from ROOM DB: ${username}")
                                     }
                                 },
                                 modifier = Modifier.padding(top = 16.dp)
@@ -362,7 +398,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                     ) { innerPadding ->
                         NavHost(
                             navController = navController,
-                            startDestination = "login",
+                            startDestination = initialRoute, // Start at login if no user is logged in or home otherwise
                             modifier = Modifier.padding(innerPadding)
                         )
                         {
