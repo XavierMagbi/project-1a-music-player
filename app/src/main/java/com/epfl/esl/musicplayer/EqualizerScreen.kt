@@ -1,6 +1,5 @@
 package com.epfl.esl.musicplayer
 
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,20 +36,33 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 
+/*
+    Equalizer Screen Composable
+
+    Functionality:
+    Allows user to adjust equalizer bands
+    Also has pad buttons to play sound effects (Which are in raw resources and unaffected by equalizer)
+        Could be stored in Firebase Storage in future iterations and allow users to pick new pad sounds :)
+
+    Navigation:
+    Can navigate to it via bottom bar
+ */
+
+ // Equalizer Screen Composable
 @Composable
 fun EqualizerScreen(
     modifier: Modifier = Modifier,
     equalizerViewModel: EqualizerViewModel = viewModel(),
     audioSessionId: Int
 ) {
-    // Bands
+    // Get variables from ViewModel (Frequency band levels)
     val subBassLevel by equalizerViewModel.subBassLevel.observeAsState(0f)
     val bassLevel by equalizerViewModel.bassLevel.observeAsState(0f)
     val midrangeLevel by equalizerViewModel.midrangeLevel.observeAsState(0f)
     val upperMidLevel by equalizerViewModel.upperMidLevel.observeAsState(0f)
     val trebleLevel by equalizerViewModel.trebleLevel.observeAsState(0f)
 
-    // Set equalizer limits
+    // Set equalizer limits for slider visualization (in mB defined by API)
     val minLevel = -1500f
     val maxLevel = 1500f
 
@@ -61,8 +73,9 @@ fun EqualizerScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Allow equalization when a music is played (To be tested if still necessary for future iterations :))
             if (audioSessionId > 0) {
-                // Sub-Bass
+                // Sub-Bass control
                 Text(text = "Sub-Bass (60 Hz): ${(subBassLevel / 100).toInt()} dB")
                 Slider(
                     value = subBassLevel,
@@ -73,7 +86,7 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
 
-                // Bass
+                // Bass control
                 Text(text = "Bass (230 Hz): ${(bassLevel / 100).toInt()} dB")
                 Slider(
                     value = bassLevel,
@@ -84,7 +97,7 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
 
-                // Midrange
+                // Midrange control
                 Text(text = "Midrange (910 Hz): ${(midrangeLevel / 100).toInt()} dB")
                 Slider(
                     value = midrangeLevel,
@@ -95,7 +108,7 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
 
-                // Upper-Midrange
+                // Upper-Midrange control
                 Text(text = "Upper-Midrange (3600 Hz): ${(upperMidLevel / 100).toInt()} dB")
                 Slider(
                     value = upperMidLevel,
@@ -106,7 +119,7 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
 
-                // Treble
+                // Treble control
                 Text(text = "Treble (14 kHz): ${(trebleLevel / 100).toInt()} dB")
                 Slider(
                     value = trebleLevel,
@@ -124,46 +137,54 @@ fun EqualizerScreen(
                         .padding(top = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Row 1
+                    // Row 1 (Pad sound 0 to 2)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                     ) {
                         repeat(3) { index ->
                             Button(
                                 onClick = {
-                                    equalizerViewModel.playPadSound(index) // To play pad sound 0 to 2
+                                    equalizerViewModel.playPadSound(index) 
                                 },
                                 modifier = Modifier
                                     .weight(1f)
                                     .size(80.dp),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                // Empty button
+                                // Pad description text to be added in future iterations :)
+                                Text("Pad ${index + 1}")
                             }
                         }
                     }
-                    // Row 2
+                    // Row 2 (Pad sound 3 to 5)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                     ) {
                         repeat(3) { index ->
                             Button(
                                 onClick = {
-                                    equalizerViewModel.playPadSound(index + 3) // To play pad sounds 3 to 5
+                                    equalizerViewModel.playPadSound(index + 3) 
                                 },
                                 modifier = Modifier
                                     .weight(1f)
                                     .size(80.dp),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                // Empty button
+                                // Pad description text to be added in future iterations :)
+                                Text("Pad ${index + 4}")
                             }
                         }
                     }
                 }
 
+                // Extra buttons
+                // Only reset button for this iteration
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -178,8 +199,8 @@ fun EqualizerScreen(
                             contentDescription = "Reset"
                         )
                     }
-                    // General gain like round volume button
                 }
+            // In case no music is played (Need to check for future iterations if this is still necessary)    
             } else {
                 Text("Play a song first to use the equalizer")
             }
@@ -187,11 +208,4 @@ fun EqualizerScreen(
     }
 }
 
-
-@Preview
-@Composable
-private fun EqualizerScreenPreview() {
-    MusicPlayerTheme {
-        EqualizerScreen(audioSessionId = 0)
-    }
-}
+// Preview will not render with such dependencies
