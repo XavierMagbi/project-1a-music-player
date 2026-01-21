@@ -336,6 +336,5 @@ class PlayScreenViewModel (
         currentPlaylist=queue
         currentTrackIndex=idx
         playCurrentTrack()
-
     }
 }
