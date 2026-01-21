@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBars by rememberSaveable { mutableStateOf(false) }
+                var shouldShowBars by rememberSaveable { mutableStateOf(shouldShowBarsInit) }
                 //var showSongBar by remember { mutableStateOf(false) }
 
                 ModalNavigationDrawer(
