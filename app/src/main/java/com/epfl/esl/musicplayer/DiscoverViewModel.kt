@@ -161,8 +161,7 @@ class DiscoverViewModel(
                 IdList.add(item.datapath)
             }
         }
-        Log.d("Discover",_filteredSongs.value.size.toString())
-        Log.d("Discover",IdList.size.toString())
+
         return IdList
     }
 }

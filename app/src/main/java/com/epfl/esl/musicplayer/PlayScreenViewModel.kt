@@ -241,10 +241,14 @@ class PlayScreenViewModel (
     }
     // Play track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
+        try{
         currentTrackIndex = index
         audioPlayer.play(currentPlaylist[index])
         isPlayerInitialized = true
         sendSongDataToWear(dataClient)
+        }catch (e:Exception){
+            Log.d("playscreen","error")
+        }
     }
     // To get timing for slider
     fun onSeek(newPosition: Float){

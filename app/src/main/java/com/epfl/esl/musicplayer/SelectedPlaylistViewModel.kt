@@ -56,8 +56,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
     private val _filteredSongs = MutableLiveData<List<musicMetadata>>(emptyList())
     val filteredSongs: LiveData<List<musicMetadata>> = _filteredSongs
 
-    private val _newQueue = MutableLiveData<List<String>>(emptyList())
-    val newQueue : LiveData<List<String>> = _newQueue
+    //private val _newQueue = MutableLiveData<List<String>>(emptyList())
+    //val newQueue : LiveData<List<String>> = _newQueue
 
     private val _playlistImageUri = MutableLiveData<Uri?>(null)
     val playlistImageUri: LiveData<Uri?> = _playlistImageUri   
@@ -119,7 +119,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
 
     private fun fetchSongsFromGsPaths(songPaths: List<String>) {
         val songList = mutableListOf<musicMetadata>()
-        _newQueue.value= emptyList() // reset the queue for this playlist
+        //_newQueue.value= emptyList() // reset the queue for this playlist
 
         if (songPaths.isEmpty()) {
             _songs.value = emptyList()
@@ -150,12 +150,13 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                             title = title,
                             image = coverImage,
                             link = fileRef.downloadUrl.toString(),
-                            linkGS = gsPath
+                            linkGS = gsPath,
+                            datapath = tempFile.absolutePath
                         )
                     )
 
                     // Add to playback queue
-                    _newQueue.value =_newQueue.value + (tempFile.absolutePath)
+                    //_newQueue.value =_newQueue.value + (tempFile.absolutePath)
 
                     // Update LiveData for UI
                     _songs.value = songList.toList()
@@ -176,6 +177,17 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                     filterSongs(_searchQuery.value ?: "")
                 }
         }
+    }
+
+    fun getSongIdList():List<String>{
+        val IdList:MutableList<String> =mutableListOf()
+        _filteredSongs.value.forEach{item ->
+            if (item.datapath!="") {
+                IdList.add(item.datapath)
+            }
+        }
+
+        return IdList
     }
 
 

@@ -74,7 +74,7 @@ fun SelectedPlaylistScreen(
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
     val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")
-    val newQueue by selectedPlaylistViewModel.newQueue.observeAsState(emptyList())
+    //val newQueue by selectedPlaylistViewModel.newQueue.observeAsState(emptyList())
 
     // For playlist picture
     val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)
@@ -200,7 +200,7 @@ fun SelectedPlaylistScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
-                            .clickable( onClick = {onSongClicked(index,newQueue)}),
+                            .clickable( onClick = {onSongClicked(index,selectedPlaylistViewModel.getSongIdList())}),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (filteredSongs[index].image != null) {
@@ -246,7 +246,7 @@ fun SelectedPlaylistScreen(
                         }
 
                         IconButton(onClick = {
-                            onAddQueue(newQueue[index])
+                            onAddQueue(filteredSongs[index].datapath)
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowCircleRight,

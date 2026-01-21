@@ -51,6 +51,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,19 +107,20 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
         setContent {
             MusicPlayerTheme {
                 val equalizerViewModel: EqualizerViewModel = viewModel()
-                 playScreenViewModel =  viewModel {
+                playScreenViewModel =  viewModel {
                     PlayScreenViewModel(
                         this@MainActivity.application,
                         equalizerViewModel,
                         dataClient
                     )
                 }
+                val musicScreenViewModel:MusicScreenViewModel= viewModel()
 
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                var shouldShowBars by remember { mutableStateOf(false) }
-                var showSongBar by remember { mutableStateOf(false) }
+                var shouldShowBars by rememberSaveable { mutableStateOf(false) }
+                //var showSongBar by remember { mutableStateOf(false) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -222,15 +224,18 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                 } else {
                                     painterResource(id = R.drawable.defaultplaylist)
                                 }
-
+                                val navBackStackEntry by navController.currentBackStackEntryAsState()
                                 Column {
-                                    if (showSongBar == true) { // Card to be visible only once a music has been picked
+                                    if (
+                                        playScreenViewModel.currentTrackIndex!=-1
+                                        &&  navBackStackEntry?.destination?.route !="musicPlayer"
+                                        ) { // Card to be visible only once a music has been picked
 
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
-                                                    showSongBar = false
+
                                                     navController.navigate("musicPlayer")
                                                 },
                                             shape = RoundedCornerShape(12.dp)
@@ -337,6 +342,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                         NavigationBarItem(
                                             selected = currentRoute == "music",
                                             onClick = {
+                                                musicScreenViewModel.showPlaylists()
                                                 navController.navigate("music")
                                             },
                                             icon = {
@@ -408,7 +414,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     currentUsername = username,
                                     onSongClicked = { queue,idx ->
                                         playScreenViewModel.changeQueue(queue, idx)
-                                        showSongBar = false
+
                                         navController.navigate("musicPlayer")
 
                                     }
@@ -418,23 +424,24 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                 MusicScreen(
                                     application = this@MainActivity.application,
                                     currentUsername = username,
-                                    playScreenViewModel = playScreenViewModel,
+                                    //playScreenViewModel = playScreenViewModel,
                                     onSongClicked = { idx, queue ->
                                         playScreenViewModel.changeQueue(queue, idx)
-                                        showSongBar = false
+
                                         navController.navigate("musicPlayer")
 
                                     },
                                     onAddQueue = {song->
                                         playScreenViewModel.addToQueue(song)
 
-                                    }
+                                    },
+                                    musicScreenViewModel = musicScreenViewModel
                                 )
                             }
                             composable("musicPlayer") {
                                 PlayScreen(
                                     onArrowClicked = {
-                                        showSongBar = true
+
                                         navController.popBackStack()
                                     },
                                     playScreenViewModel = playScreenViewModel
