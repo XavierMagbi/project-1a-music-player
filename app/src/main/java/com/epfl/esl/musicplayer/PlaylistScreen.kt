@@ -50,7 +50,12 @@ fun PlaylistScreen(
             currentUsername)
     )
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    // To add playlist
+    var showAddDialog by remember { mutableStateOf(false) }
+    // To delete playlist
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteIndex by remember { mutableStateOf(-1) }
+
     val context = LocalContext.current
 
     val myPlaylists by playlistViewModel.myPlaylists.observeAsState(emptyList())
@@ -63,7 +68,7 @@ fun PlaylistScreen(
         Scaffold(
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { showDialog = true }
+                    onClick = { showAddDialog = true }
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add playlist")
                 }
@@ -112,8 +117,8 @@ fun PlaylistScreen(
                             )
                             IconButton(
                                 onClick = {
-                                    playlistViewModel.deletePlaylist(myPlaylists[index].id ?: "")
-                                    Toast.makeText(context, "Deleted playlist", Toast.LENGTH_SHORT).show()
+                                    deleteIndex = index
+                                    showDeleteDialog = true
                                 }
                             ) {
                                 Icon(
@@ -170,14 +175,28 @@ fun PlaylistScreen(
             }
         }
 
-        if (showDialog) {
+        if (showAddDialog) {
             AddPlaylistDialog(
                 onAdd = { playlistName ->
                     playlistViewModel.addPlaylist(playlistName)
-                    showDialog = false
+                    showAddDialog = false
                 },
                 onCancel = {
-                    showDialog = false
+                    showAddDialog = false
+                }
+            )
+        }
+
+        if (showDeleteDialog){
+            DeletePlaylistDialog(
+                index = deleteIndex,
+                onDelete = { index ->
+                    playlistViewModel.deletePlaylist(myPlaylists[index].id ?: "")
+                    Toast.makeText(context, "Deleted playlist", Toast.LENGTH_SHORT).show()
+                    showDeleteDialog = false
+                },
+                onCancel = {
+                    showDeleteDialog = false
                 }
             )
         }
@@ -186,8 +205,8 @@ fun PlaylistScreen(
 
 @Composable
 fun AddPlaylistDialog(onAdd: (String)->Unit,
-                      onCancel:()->Unit,
-                      modifier: Modifier = Modifier) {
+                    onCancel:()->Unit,
+                    modifier: Modifier = Modifier) {
     var text by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -209,6 +228,34 @@ fun AddPlaylistDialog(onAdd: (String)->Unit,
                 }
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun DeletePlaylistDialog(index: Int,
+                        onDelete:(Int)->Unit,
+                        onCancel:()->Unit,
+                        modifier: Modifier = Modifier) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("") },
+        text = {
+            Text("Do you really want to delete this playlist?")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDelete(index)
+                }
+            ) {
+                Text("Delete")
             }
         },
         dismissButton = {
