@@ -209,7 +209,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     BitmapPainter(bitmap)
                                 } else {
-                                    painterResource(id = R.drawable.ic_launcher_foreground)
+                                    painterResource(id = R.drawable.defaultplaylist)
                                 }
 
                                 Column {
