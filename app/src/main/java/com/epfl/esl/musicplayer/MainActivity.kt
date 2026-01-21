@@ -405,7 +405,13 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                             }
                             composable("discover") {
                                 DiscoverScreen(
-                                    currentUsername = username
+                                    currentUsername = username,
+                                    onSongClicked = { queue,idx ->
+                                        playScreenViewModel.changeQueue(queue, idx)
+                                        showSongBar = false
+                                        navController.navigate("musicPlayer")
+
+                                    }
                                 )
                             }
                             composable("music") {

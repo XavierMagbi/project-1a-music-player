@@ -55,6 +55,7 @@ import java.io.File
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
     currentUsername: String = "",
+    onSongClicked:(List<String>,Int)->Unit,
     discoverViewModel: DiscoverViewModel = viewModel (
         factory = DiscoverViewModelFactory(
             LocalContext.current.applicationContext as android.app.Application,
@@ -106,7 +107,11 @@ fun DiscoverScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .clickable(onClick = {
+                            onSongClicked(discoverViewModel.getSongIdList(),index)
+                        })
+                    ,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (filteredSongs[index].image != null) {

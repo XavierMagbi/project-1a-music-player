@@ -18,7 +18,8 @@ data class musicMetadata (
     val title: String? = "",
     val image: ByteArray? = null,
     val link: String? = "",
-    val linkGS: String? = ""
+    val linkGS: String? = "",
+    val datapath: String=""
 )
 
 //Week 5: ViewModels and System Services (slide 8)
@@ -35,6 +36,9 @@ class DiscoverViewModel(
     application: Application,
     private val currentUsername: String
 ): AndroidViewModel(application) {
+
+    val context = getApplication<Application>().applicationContext
+
     private val storage = FirebaseStorage.getInstance()
 
     private val _searchQuery = MutableLiveData("")
@@ -44,6 +48,8 @@ class DiscoverViewModel(
 
     private val _filteredSongs = MutableLiveData<List<musicMetadata>>(emptyList())
     val filteredSongs: LiveData<List<musicMetadata>> = _filteredSongs
+
+
 
     // For dialog
     private val playlistRef = FirebaseDatabase.getInstance().getReference("Playlists")
@@ -67,6 +73,8 @@ class DiscoverViewModel(
 
                 fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener { bytes ->
                     try {
+                        //val tempFile = File(context.cacheDir, fileRef.name)
+
                         val tempFile = File.createTempFile("song", ".mp3")
                         tempFile.writeBytes(bytes)
 
@@ -78,7 +86,11 @@ class DiscoverViewModel(
                         val coverImage = retriever.embeddedPicture
                         retriever.release()
 
-                        songList.add(musicMetadata(title, coverImage, link))
+                        //download song and add link to metadata
+                        val songFile = File(context.cacheDir, fileRef.name)
+                        songFile.writeBytes(bytes)
+
+                        songList.add(musicMetadata(title, coverImage, link, datapath = songFile.absolutePath))
                         _songs.value = songList.toList()
 
                         filterSongs(_searchQuery.value ?: "")
@@ -140,5 +152,17 @@ class DiscoverViewModel(
 
             playlistRef.child(playlistId).child("tracks").setValue(updatedTracks)
         }
+    }
+
+    fun getSongIdList():List<String>{
+        val IdList:MutableList<String> =mutableListOf()
+        _filteredSongs.value.forEach{item ->
+            if (item.datapath!="") {
+                IdList.add(item.datapath)
+            }
+        }
+        Log.d("Discover",_filteredSongs.value.size.toString())
+        Log.d("Discover",IdList.size.toString())
+        return IdList
     }
 }
