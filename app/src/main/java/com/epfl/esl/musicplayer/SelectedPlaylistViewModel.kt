@@ -24,12 +24,15 @@ import java.io.File
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 
 
-class SelectedPlaylistViewModel(application : Application, playlistId: String) : AndroidViewModel(application){
+class SelectedPlaylistViewModel(application : Application, playlistId: String, currentUsername: String) : AndroidViewModel(application){
     val context = getApplication<Application>().applicationContext
+    // To be able to use the given parameters
     private val playlistId = playlistId
+    private val currentUsername = currentUsername
 
     private val database = FirebaseDatabase.getInstance()
     private val playlistsRef = database.getReference("Playlists")
@@ -59,6 +62,9 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
     private val _playlistImageUri = MutableLiveData<Uri?>(null)
     val playlistImageUri: LiveData<Uri?> = _playlistImageUri   
 
+    private val _isMyPlaylist = MutableLiveData<Boolean>(false)
+    val isMyPlaylist: LiveData<Boolean> = _isMyPlaylist
+
     init {
         // Start listening for playlist changes
         listenToPlaylist(playlistId)
@@ -71,6 +77,9 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         playlistListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 _playlistName.value =  snapshot.child("name").getValue(String::class.java)
+
+               val playlistAuthor = snapshot.child("author").getValue(String::class.java)
+               _isMyPlaylist.value = (playlistAuthor == currentUsername)
 
                 // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
                 val photoUrlString = snapshot.child("photo_URL").getValue(String::class.java)
@@ -140,7 +149,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
                         musicMetadata(
                             title = title,
                             image = coverImage,
-                            link = fileRef.downloadUrl.toString() // optional, can keep the URI
+                            link = fileRef.downloadUrl.toString(),
+                            linkGS = gsPath
                         )
                     )
 
@@ -168,6 +178,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         }
     }
 
+
     // ==== To update playlist picture ====
 
     // Update the profile image URI (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
@@ -194,10 +205,32 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
         val playlistImageRef = storage.reference.child("PlaylistImages/" + playlistId + ".jpg")
         val uploadPlaylistImage = playlistImageRef.putBytes(imageByteArray)
 
-        playlistImageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-            _playlistImageUri.value = downloadUrl  // Update LiveData with new URI
-            playlistsRef.child(playlistId).child("photo_URL").setValue(downloadUrl.toString())  // Update in Realtime Database
+        uploadPlaylistImage.addOnSuccessListener { taskSnapshot ->
+            playlistImageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                _playlistImageUri.value = downloadUrl  // Update LiveData
+                playlistsRef.child(playlistId).child("photo_URL").setValue(downloadUrl.toString())  // Update URL
+            }
         }
+    }
+
+    // ==== To rename playlist ====
+    fun updatePlaylistName(newName: String) {
+        _playlistName.value = newName  // Locally update
+        playlistsRef.child(playlistId).child("name").setValue(newName)  // Remote update
+    }
+
+    // ==== To delete song from playlist ====
+    // Function is simplified to delete first instance (in case of multiple times the same music) of concerned music in playlist
+    // Would require to rework data structure of Realtime Database otherwise (limited time in project)
+    fun deleteSong(linkGS: String) {
+        // Get all playlist songs
+        val currentTracks = _song_id.value?.toMutableList() ?: return
+        // Spot the first index of the song to delete
+        val indexToDelete = currentTracks.indexOfFirst { it == linkGS }
+        // Remove only the first occurrence
+        currentTracks.removeAt(indexToDelete)
+        // Update in remote
+        playlistsRef.child(playlistId).child("tracks").setValue(currentTracks)
     }
 }
 
@@ -205,13 +238,14 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String) :
 
 class SelectedPlaylistViewModelFactory(
     private val playlistId: String,
-    private val application: Application
+    private val application: Application,
+    private val currentUsername: String
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SelectedPlaylistViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SelectedPlaylistViewModel( playlistId =playlistId, application = application ) as T
+            return SelectedPlaylistViewModel( playlistId =playlistId, application = application, currentUsername = currentUsername) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

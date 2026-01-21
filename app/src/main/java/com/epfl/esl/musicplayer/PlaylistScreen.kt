@@ -1,12 +1,16 @@
 package com.epfl.esl.musicplayer
 
+import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,8 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 
 @Composable
 fun PlaylistScreen(
@@ -44,7 +50,12 @@ fun PlaylistScreen(
             currentUsername)
     )
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    // To add playlist
+    var showAddDialog by remember { mutableStateOf(false) }
+    // To delete playlist
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteIndex by remember { mutableStateOf(-1) }
+
     val context = LocalContext.current
 
     val myPlaylists by playlistViewModel.myPlaylists.observeAsState(emptyList())
@@ -57,7 +68,7 @@ fun PlaylistScreen(
         Scaffold(
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { showDialog = true }
+                    onClick = { showAddDialog = true }
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add playlist")
                 }
@@ -83,14 +94,31 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (myPlaylists[index].imageUri != null){
+                                AsyncImage(
+                                    model = myPlaylists[index].imageUri,
+                                    contentDescription = "Playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    contentDescription = "Default playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            }
                             Text(
                                 text = "${myPlaylists[index].title ?: "Unknown title"} by ${myPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
                             )
                             IconButton(
                                 onClick = {
-                                    playlistViewModel.deletePlaylist(myPlaylists[index].id ?: "")
-                                    Toast.makeText(context, "Deleted playlist", Toast.LENGTH_SHORT).show()
+                                    deleteIndex = index
+                                    showDeleteDialog = true
                                 }
                             ) {
                                 Icon(
@@ -120,6 +148,23 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (friendsPlaylists[index].imageUri != null){
+                                AsyncImage(
+                                    model = friendsPlaylists[index].imageUri,
+                                    contentDescription = "Playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    contentDescription = "Default playlist picture",
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(end = 8.dp)
+                                )
+                            }
                             Text(
                                 text = "${friendsPlaylists[index].title ?: "Unknown title"} by ${friendsPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
@@ -130,14 +175,28 @@ fun PlaylistScreen(
             }
         }
 
-        if (showDialog) {
+        if (showAddDialog) {
             AddPlaylistDialog(
                 onAdd = { playlistName ->
                     playlistViewModel.addPlaylist(playlistName)
-                    showDialog = false
+                    showAddDialog = false
                 },
                 onCancel = {
-                    showDialog = false
+                    showAddDialog = false
+                }
+            )
+        }
+
+        if (showDeleteDialog){
+            DeletePlaylistDialog(
+                index = deleteIndex,
+                onDelete = { index ->
+                    playlistViewModel.deletePlaylist(myPlaylists[index].id ?: "")
+                    Toast.makeText(context, "Deleted playlist", Toast.LENGTH_SHORT).show()
+                    showDeleteDialog = false
+                },
+                onCancel = {
+                    showDeleteDialog = false
                 }
             )
         }
@@ -146,8 +205,8 @@ fun PlaylistScreen(
 
 @Composable
 fun AddPlaylistDialog(onAdd: (String)->Unit,
-                      onCancel:()->Unit,
-                      modifier: Modifier = Modifier) {
+                    onCancel:()->Unit,
+                    modifier: Modifier = Modifier) {
     var text by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -169,6 +228,34 @@ fun AddPlaylistDialog(onAdd: (String)->Unit,
                 }
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun DeletePlaylistDialog(index: Int,
+                        onDelete:(Int)->Unit,
+                        onCancel:()->Unit,
+                        modifier: Modifier = Modifier) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("") },
+        text = {
+            Text("Do you really want to delete this playlist?")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDelete(index)
+                }
+            ) {
+                Text("Delete")
             }
         },
         dismissButton = {

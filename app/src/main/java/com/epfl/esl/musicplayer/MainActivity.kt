@@ -220,7 +220,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     }
                                     BitmapPainter(bitmap)
                                 } else {
-                                    painterResource(id = R.drawable.ic_launcher_foreground)
+                                    painterResource(id = R.drawable.defaultplaylist)
                                 }
 
                                 Column {
@@ -417,6 +417,10 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                         playScreenViewModel.changeQueue(queue, idx)
                                         showSongBar = false
                                         navController.navigate("musicPlayer")
+
+                                    },
+                                    onAddQueue = {song->
+                                        playScreenViewModel.addToQueue(song)
 
                                     }
                                 )

@@ -11,19 +11,25 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowCircleRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +37,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -55,11 +63,13 @@ fun SelectedPlaylistScreen(
     application: Application,
     playlistId: String,
     onSongClicked:(Int,List<String>)->Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentUsername: String,
+    onAddQueue:(String)->Unit
 ) {
     val context = LocalContext.current
     
-    val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application))
+    val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application,currentUsername))
     val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")
     val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
     val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
@@ -68,6 +78,8 @@ fun SelectedPlaylistScreen(
 
     // For playlist picture
     val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)
+    // For access to change playlist picture (cannot change Friends' playlists)
+    val isMyPlaylist by selectedPlaylistViewModel.isMyPlaylist.observeAsState(initial = false)
 
     // From EE-490(g) labs to get result from intent
     val resultLauncher = rememberLauncherForActivityResult(
@@ -79,6 +91,9 @@ fun SelectedPlaylistScreen(
             }
         }
     )
+    
+    // For rename dialog
+    var showRenameDialog by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -98,16 +113,17 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
-                                .width(150.dp)
+                                .size(150.dp)
                                 .clickable(
                                     onClick = {
-                                        // Open image picker
-                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                        intent.type = "image/*"
-                                        resultLauncher.launch(intent)
+                                        if (isMyPlaylist){
+                                            // Open image picker
+                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                            intent.type = "image/*"
+                                            resultLauncher.launch(intent)
+                                        }
                                     }
                                 ),
-                            contentScale = ContentScale.Crop
                         )
                     } else {
                         Image(
@@ -116,25 +132,48 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
-                                .width(150.dp)
+                                .size(150.dp)
                                 .clickable(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                        intent.type = "image/*"
-                                        resultLauncher.launch(intent)
+                                        if (isMyPlaylist){
+                                            // Open image picker
+                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                            intent.type = "image/*"
+                                            resultLauncher.launch(intent)
+                                        }
                                     }
                                 ),
-                            contentScale = ContentScale.Crop
                         )
                     }
                 }
                 // Playlist name
                 item {
-                    Text(
-                        text = playlistName,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center  //
+                    ){
+                        Text(
+                            text = playlistName,
+                            textAlign = TextAlign.Center
+                        )
+
+                        if (isMyPlaylist) {
+                            // To rename playlist (only if my playlist)
+                            IconButton(
+                                onClick = {
+                                    showRenameDialog = true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = "Rename playlist"
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Search bar
@@ -188,9 +227,26 @@ fun SelectedPlaylistScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        if (isMyPlaylist) {
+                            IconButton(onClick = {
+                                selectedPlaylistViewModel.deleteSong(
+                                    filteredSongs[index].linkGS ?: ""
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Deleted song from playlist",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.RemoveCircle,
+                                    contentDescription = "Delete from playlist button"
+                                )
+                            }
+                        }
+
                         IconButton(onClick = {
-                            // STILL TO BE CORRECTED AFTER MERGE
-                            Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+                            onAddQueue(newQueue[index])
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowCircleRight,
@@ -203,5 +259,48 @@ fun SelectedPlaylistScreen(
             }
         }
     }
+
+    if (showRenameDialog) {
+        EditPlaylistDialog(
+            onDismiss = { showRenameDialog = false },
+            onConfirm = { newName -> selectedPlaylistViewModel.updatePlaylistName(newName) }
+        )
+    }
 }
 
+
+@Composable
+fun EditPlaylistDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var newPlaylistName by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename Playlist") },
+        text = {
+            TextField(
+                value = newPlaylistName,
+                onValueChange = { newPlaylistName = it },
+                label = { Text("New playlist name") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(newPlaylistName)
+                    onDismiss()
+                }
+            ) {
+                Text("Rename")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}

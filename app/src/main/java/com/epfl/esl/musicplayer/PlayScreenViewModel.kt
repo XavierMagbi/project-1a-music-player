@@ -6,6 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.result.launch
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -34,7 +37,7 @@ class PlayScreenViewModel (
     private val dataClient : DataClient
 ) : AndroidViewModel(application) {
 
-
+    val context = getApplication<Application>().applicationContext
     private val audioPlayer = AudioPlayerService(application.applicationContext)
 
     // Service variables
@@ -46,7 +49,7 @@ class PlayScreenViewModel (
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
     private var isPlayerInitialized = false
-    val originalPlaylist = emptyList<String>()
+    var originalPlaylist by mutableStateOf(emptyList<String>())
     var currentPlaylist by mutableStateOf(originalPlaylist)
     var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
 
@@ -312,17 +315,24 @@ class PlayScreenViewModel (
         }
     }
 
-    fun addToQueue(index: Int) {
+    fun addToQueue(songRef: String) {
         // Add music right after the current track
-        val track = originalPlaylist[index]
+        //val track = originalPlaylist[index]
         val newPlaylist = currentPlaylist.toMutableList()
 
         // Insert at position currentTrackIndex + 1 (right after current track)
-        newPlaylist.add(currentTrackIndex + 1, track)
+        newPlaylist.add(currentTrackIndex + 1, songRef)
         currentPlaylist = newPlaylist
+        if (originalPlaylist.size==0){
+            Toast.makeText(context, "Launch a queue before adding", Toast.LENGTH_SHORT).show()
+        }
+        else{
+            Toast.makeText(context, "Added to queue", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun changeQueue(queue:List<String>,idx:Int){
+        originalPlaylist=queue
         currentPlaylist=queue
         currentTrackIndex=idx
         playCurrentTrack()

@@ -100,7 +100,7 @@ fun PlayScreen(
         }
         BitmapPainter(bitmap)
     } else {
-        painterResource(id = R.drawable.ic_launcher_foreground)
+        painterResource(id = R.drawable.defaultplaylist)
     }
 
     // To convert ms to readable time
@@ -319,14 +319,14 @@ fun PlayScreen(
                                 ).asImageBitmap()
                             )
                         } else {
-                            painterResource(id = R.drawable.ic_launcher_foreground)
+                            painterResource(id = R.drawable.defaultplaylist)
                         }
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    playScreenViewModel.playCurrentTrack(index)
+                                    playScreenViewModel.playCurrentTrack(queueIndex)
                                     showQueue = false
                                 }
                         ) {
