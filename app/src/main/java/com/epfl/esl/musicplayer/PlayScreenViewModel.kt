@@ -94,7 +94,7 @@ class PlayScreenViewModel (
 
 
     // Function to send Song Data to the wear module
-     fun sendSongDataToWear(dataClient: DataClient,isnewTrack:Boolean=false) {
+    fun sendSongDataToWear(dataClient: DataClient,isnewTrack:Boolean=false) {
 
         viewModelScope.launch {
 

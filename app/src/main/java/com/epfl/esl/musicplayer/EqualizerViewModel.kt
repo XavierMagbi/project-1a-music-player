@@ -121,7 +121,7 @@ class EqualizerViewModel(
     }
 
     // Play pad sound corresponding to padId
-    // Much simplified for this iteration :)
+    // Much simplified for this iteration (uses RAW files and can only play one at a time) :)
     fun playPadSound(padId: Int) {
         try {
             // Mapper ID to corresponding file
@@ -135,8 +135,10 @@ class EqualizerViewModel(
                 else -> R.raw.pad_sound0
             }
             // Play pad sound
+            padSoundPlayer?.release()
             padSoundPlayer = MediaPlayer.create(appContext, soundResId)
             padSoundPlayer?.start()
+            Log.d("EqualizerViewModel", "Playing pad sound for padId: $padId" )
         } catch (e: Exception) {
             Log.e("EqualizerViewModel", "Error playing pad sound: ${e.message}")
         }
