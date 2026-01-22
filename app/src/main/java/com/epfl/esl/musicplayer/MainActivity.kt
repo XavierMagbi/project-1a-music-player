@@ -582,9 +582,6 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
         Wearable.getMessageClient(this).removeListener(this)
         Log.d("Main Activity","removedListener attached")
     }
-
-
-
 }
 
 
