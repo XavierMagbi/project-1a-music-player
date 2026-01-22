@@ -18,3 +18,11 @@ data class musicMetadata (
     val linkGS: String? = "",
     val datapath: String=""
 )
+
+// Data class to hold playlist metadata to be displayed in PlaylistScreen and SelectedPlaylistScreen
+data class playlistMetadata (
+    val title: String? = "",
+    val creator: String? = "",
+    val id: String? = "",
+    val imageUri: Uri? = null
+)

@@ -191,7 +191,7 @@ fun DiscoverScreen(
 @Composable
 fun AddSongToPlaylistDialog(
     playlists: List<playlistMetadata>,
-    onAdd: (String) -> Unit,            // input: playlistId
+    onAdd: (String) -> Unit,            // Input: playlistId
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {

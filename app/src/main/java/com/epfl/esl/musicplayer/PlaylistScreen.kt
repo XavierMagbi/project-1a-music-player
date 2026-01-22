@@ -34,36 +34,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 
+/*
+    Playlist Screen Composable
+
+    Functionality:
+    Displays user's playlists and friends' playlists
+    Allows adding new playlists and deleting existing ones (only user's own playlists)
+    Allows navigating to SelectedPlaylistScreen when a playlist is clicked (with corresponding playlistId)
+
+    Navigation:
+    Can navigate to it via bottom bar (default screen for MusicScreen)
+ */
+
+ // Playlist Screen Composable
 @Composable
 fun PlaylistScreen(
     modifier: Modifier = Modifier,
-    onPlaylistClicked:(String)->Unit,
-    currentUsername: String = "",
+    onPlaylistClicked:(String)->Unit,                   // To navigate to SelectedPlaylistScreen with the corresponding playlistId
+    currentUsername: String = "",                       // To load user and friends' playlists
     playlistViewModel: PlaylistViewModel = viewModel (
         factory = PlaylistViewModelFactory(
             LocalContext.current.applicationContext as android.app.Application,
             currentUsername)
     )
 ) {
-    // To add playlist
-    var showAddDialog by remember { mutableStateOf(false) }
-    // To delete playlist
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var deleteIndex by remember { mutableStateOf(-1) }
+    // Get variables from ViewModel
+    val myPlaylists by playlistViewModel.myPlaylists.observeAsState(emptyList())            // User's playlist
+    val friendsPlaylists by playlistViewModel.friendsPlaylists.observeAsState(emptyList())  // Friends' playlists
 
-    val context = LocalContext.current
-
-    val myPlaylists by playlistViewModel.myPlaylists.observeAsState(emptyList())
-    val friendsPlaylists by playlistViewModel.friendsPlaylists.observeAsState(emptyList())
+    // Composable variables
+    var showAddDialog by remember { mutableStateOf(false) }                                 // To show/hide add playlist dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }                              // To show/hide delete playlist dialog
+    var deleteIndex by remember { mutableStateOf(-1) }                                      // To store index of playlist to delete
+    val context = LocalContext.current                                                      // To show Toast messages
 
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Scaffold(
+            // Floating action button to add new playlist
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { showAddDialog = true }
@@ -73,12 +87,16 @@ fun PlaylistScreen(
             }
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
+                // User's playlists (Upper half of the screen)
                 LazyColumn(modifier = Modifier.weight(0.5f)) {
                     item{
                         Text(
                             text = "Your playlists",
+                            modifier = Modifier.padding(start = 8.dp),
+                            fontSize = 20.sp
                         )
                     }
+                    // Get to SelectedPlaylistScreen with the corresponding playlistId when a playlist is clicked
                     items(myPlaylists.size){ index ->
                         Row(
                             modifier = Modifier
@@ -92,6 +110,7 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Display playlist image if available/exists, else display default image
                             if (myPlaylists[index].imageUri != null){
                                 AsyncImage(
                                     model = myPlaylists[index].imageUri,
@@ -109,13 +128,15 @@ fun PlaylistScreen(
                                         .padding(end = 8.dp)
                                 )
                             }
+                            // Dispaly playlist title and creator
                             Text(
                                 text = "${myPlaylists[index].title ?: "Unknown title"} by ${myPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
                             )
+                            // Delete playlist button (only for user's own playlists)
                             IconButton(
                                 onClick = {
-                                    deleteIndex = index
+                                    deleteIndex = index // Update deleteIndex to delete corresponding playlist
                                     showDeleteDialog = true
                                 }
                             ) {
@@ -127,12 +148,16 @@ fun PlaylistScreen(
                         }
                     }
                 }
+                // Friends' playlists (Lower half of the screen)
                 LazyColumn(modifier = Modifier.weight(0.5f)) {
                     item{
                         Text(
                             text = "Your friends' playlists",
+                            modifier = Modifier.padding(start = 8.dp),
+                            fontSize = 20.sp
                         )
                     }
+                    // Get to SelectedPlaylistScreen with the corresponding playlistId when a playlist is clicked
                     items(friendsPlaylists.size){ index ->
                         Row(
                             modifier = Modifier
@@ -146,6 +171,7 @@ fun PlaylistScreen(
                             ,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Display playlist image if available/exists, else display default image
                             if (friendsPlaylists[index].imageUri != null){
                                 AsyncImage(
                                     model = friendsPlaylists[index].imageUri,
@@ -163,6 +189,7 @@ fun PlaylistScreen(
                                         .padding(end = 8.dp)
                                 )
                             }
+                            // Display playlist title and creator
                             Text(
                                 text = "${friendsPlaylists[index].title ?: "Unknown title"} by ${friendsPlaylists[index].creator ?: "Unknown creator"}",
                                 modifier = Modifier.weight(1f)
@@ -172,7 +199,7 @@ fun PlaylistScreen(
                 }
             }
         }
-
+        // Add playlist dialog
         if (showAddDialog) {
             AddPlaylistDialog(
                 onAdd = { playlistName ->
@@ -184,7 +211,7 @@ fun PlaylistScreen(
                 }
             )
         }
-
+        // Delete playlist dialog
         if (showDeleteDialog){
             DeletePlaylistDialog(
                 index = deleteIndex,
@@ -201,14 +228,16 @@ fun PlaylistScreen(
     }
 }
 
+// Dialog Composable to add a new playlist
 @Composable
-fun AddPlaylistDialog(onAdd: (String)->Unit,
+fun AddPlaylistDialog(onAdd: (String)->Unit,         // Input: playlist name to be added
                     onCancel:()->Unit,
-                    modifier: Modifier = Modifier) {
-    var text by remember { mutableStateOf("") }
+                    modifier: Modifier = Modifier
+) {             
+    var text by remember { mutableStateOf("") }     // To store playlist name input    
 
     AlertDialog(
-        onDismissRequest = onCancel,
+        onDismissRequest = onCancel,                // If click outside dialog then close it
         title = { Text("New playlist") },
         text = {
             TextField(
@@ -221,8 +250,7 @@ fun AddPlaylistDialog(onAdd: (String)->Unit,
         confirmButton = {
             TextButton(
                 onClick = {
-                    onAdd(text)
-
+                    onAdd(text)                     
                 }
             ) {
                 Text("Add")
@@ -236,13 +264,14 @@ fun AddPlaylistDialog(onAdd: (String)->Unit,
     )
 }
 
+// Dialog Composable to delete a playlist
 @Composable
 fun DeletePlaylistDialog(index: Int,
-                        onDelete:(Int)->Unit,
+                        onDelete:(Int)->Unit,            // Input: index of playlist to be deleted
                         onCancel:()->Unit,
                         modifier: Modifier = Modifier) {
     AlertDialog(
-        onDismissRequest = onCancel,
+        onDismissRequest = onCancel,                    // If click outside dialog then close it
         title = { Text("") },
         text = {
             Text("Do you really want to delete this playlist?")
@@ -250,7 +279,7 @@ fun DeletePlaylistDialog(index: Int,
         confirmButton = {
             TextButton(
                 onClick = {
-                    onDelete(index)
+                    onDelete(index)                    // Delete playlist with given index
                 }
             ) {
                 Text("Delete")

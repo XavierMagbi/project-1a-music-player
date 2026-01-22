@@ -20,7 +20,7 @@ import androidx.lifecycle.ViewModelProvider
     Handles searching for songs and adding them to user playlists
 
     Interacts with:
-    Firebase Realtime Database - to fetch user playlists and songs to them
+    Firebase Realtime Database - to fetch user playlists and add songs to them
     Firebase Storage - to fetch songs .mp3 files and extract metadata
  */
 
