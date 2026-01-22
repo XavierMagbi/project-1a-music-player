@@ -34,9 +34,10 @@ class HomeScreenViewModel:ViewModel() {
     // Search for users whose usernames start with the given query (case insensitive)
     // Results are displayed dynamically as more users are loaded
     fun searchUsers(query: String) {
+        _foundUsers.value = emptyList() // To ensure clean slate for new search
         // If query is empty, return empty list. To avoid getting all users from database.
         if (query.isEmpty()) {
-            _foundUsers.value = emptyList()
+            _foundUsers.value = emptyList() 
             return
         }
 
