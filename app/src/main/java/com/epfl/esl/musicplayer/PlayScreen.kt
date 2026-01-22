@@ -49,32 +49,47 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
 
+/*
+    Play Screen Composable
 
+    Functionality:
+    Allows user view current song/associated metadata and next songs in queue
+    User can interact with playback by pressing the playback control buttons
+    User can go to a song in queue by pressing the display queue button and the title of his choice
+
+    Navigation:
+    Can navigate to by pressing a song on the Selected Playlist screen or in the Discover screen
+    When a song has already been played user can navigate by pressing the minimized playback info
+        on the bottom bar
+    Navigating out of this screen will display the minimized playback info
+ */
+
+// Play screen composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayScreen(
-    onArrowClicked:()->Unit,
+    onArrowClicked:()->Unit,                //Function delegation to navigate out of screen
     modifier: Modifier = Modifier,
-    playScreenViewModel: PlayScreenViewModel = viewModel()
+    playScreenViewModel: PlayScreenViewModel = viewModel() //viewModel to manage State
 ) {
-    val context = LocalContext.current
 
-    val isPlaying by playScreenViewModel.isPlaying.observeAsState(initial = false)
-    val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
-    val duration by playScreenViewModel.duration.observeAsState(0)
-    val title by playScreenViewModel.title.observeAsState(initial = "")
-    val coverImage by playScreenViewModel.coverImage.observeAsState()
-    val shuffleOn by playScreenViewModel.shuffleOn.observeAsState(initial = false)
-    val repeatMode by playScreenViewModel.repeatMode.observeAsState(0)
-    val currentTrackIndex = playScreenViewModel.currentTrackIndex
-    val playlist = playScreenViewModel.currentPlaylist
-    val originalPlaylist = playScreenViewModel.originalPlaylist
+    //get variables from viewModel
+    val isPlaying by playScreenViewModel.isPlaying.observeAsState(initial = false) //if a song is playing
+    val currentPosition by playScreenViewModel.currentPosition.observeAsState(0) //current playback time
+    val duration by playScreenViewModel.duration.observeAsState(0) // duration of the current track
+    val title by playScreenViewModel.title.observeAsState(initial = "") //title of the track
+    val coverImage by playScreenViewModel.coverImage.observeAsState() //current track cover art
+    val shuffleOn by playScreenViewModel.shuffleOn.observeAsState(initial = false) //to know if queue shuffling is on
+    val repeatMode by playScreenViewModel.repeatMode.observeAsState(0) // to which playback mode is activated (no repeat, repeat queue,repeat track)
+    val currentTrackIndex = playScreenViewModel.currentTrackIndex // current index in queue of track
+    val playlist = playScreenViewModel.currentPlaylist //list of paths to tracks to display queue
+
 
     // Queue slider state
     var showQueue by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
-    // To convert ByteArray to Image
+    // convert cover image (byte array) to painter or set default image if no image exists
     val painter = if (coverImage != null) {
         val bitmap = remember(coverImage) {
             BitmapFactory.decodeByteArray(
@@ -88,7 +103,7 @@ fun PlayScreen(
         painterResource(id = R.drawable.default_sound_pic)
     }
 
-    // To convert ms to readable time
+    // function to convert ms to readable time
     fun formatTime(ms: Int): String {
         val totalSeconds = ms / 1000
         val minutes = totalSeconds / 60
@@ -100,13 +115,13 @@ fun PlayScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-
+        //Lazy column to put UI elements and avoid resizing
         LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             item {
-                // Arrow back
+                // Arrow to navigate out of playScreen
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -139,18 +154,18 @@ fun PlayScreen(
                             animationMode = Immediately,
                             repeatDelayMillis = 200,
                             velocity =  20.dp
-                        ),// Make the text auto-scrollable
+                        ),// Make the text auto-scroll when too long
                     minLines = 2,
-                    maxLines = 2,
-                    //overflow = TextOverflow.Ellipsis
+
+
                 )
             }
 
-            // Time slider
+            // Time slider - show how much time is elapsed and seek to specific time in song
             item {
                 Slider(
                     value = currentPosition.toFloat(),
-                    onValueChange = { playScreenViewModel.onSeek(it) },
+                    onValueChange = { playScreenViewModel.onSeek(it) }, //handle when clicking on a timestamp on slider
                     valueRange = 0f..duration.toFloat(),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -158,7 +173,7 @@ fun PlayScreen(
                 )
             }
 
-            // Time display
+            // Time display - display current time and remaining time in correct format
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -179,12 +194,12 @@ fun PlayScreen(
                 }
             }
 
-            // Arrow + Play/Pause buttons
+            // Arrows + Play/Pause button - clickable icons
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left arrow
+                    // rewind arrow
                     Icon(
                         imageVector = Icons.Filled.FastRewind,
                         contentDescription = "",
@@ -198,7 +213,7 @@ fun PlayScreen(
                     // Play/pause
                     Icon(
                         imageVector = if (isPlaying == true)
-                            Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            Icons.Filled.Pause else Icons.Filled.PlayArrow, //change icon if play or pause
                         contentDescription = "",
                         modifier = modifier
                             .size(200.dp)
@@ -207,7 +222,7 @@ fun PlayScreen(
                                 playScreenViewModel.onPlayPauseClick()
                             }
                     )
-                    // Right arrow
+                    // fast forward arrow
                     Icon(
                         imageVector = Icons.Filled.FastForward,
                         contentDescription = "",
@@ -248,9 +263,12 @@ fun PlayScreen(
                                 showQueue = true
                             }
                     )
-                    // Loop button
+                    // repeat button
                     Icon(
-                        imageVector = if (repeatMode == 0) Icons.Filled.Repeat else if (repeatMode == 1) Icons.Filled.RepeatOn else Icons.Filled.RepeatOneOn,
+                        imageVector = if (repeatMode == 0) Icons.Filled.Repeat
+                                        else if (repeatMode == 1) Icons.Filled.RepeatOn
+                                        else Icons.Filled.RepeatOneOn,
+                        // change icon depending on repeat mode
                         contentDescription = "",
                         modifier = modifier
                             .size(50.dp)
@@ -267,7 +285,7 @@ fun PlayScreen(
     }
 
 
-    // Queue sheet
+    // Queue sheet - display next songs to come and play specific song if clicked
     if (showQueue) {
         ModalBottomSheet(
             onDismissRequest = { showQueue = false },
@@ -278,23 +296,23 @@ fun PlayScreen(
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
-                // Sheet title
+                // text to explain it is the music queue
                 Text(
                     text = "Music Queue",
                     style = MaterialTheme.typography.headlineSmall
                 )
-                // Musics in queue
+                // Lazy column to display a scrollable list of songs in queue
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(playlist.size - currentTrackIndex - 1) { index ->
-                        // Queue index
+                        // extract next songs index
                         val queueIndex = index + currentTrackIndex + 1
-                        // Extract id
+                        // retrieve .mp3 location to extract metadata
                         val resId = playlist[queueIndex]
                         // Extract metadata
                         val (trackName, trackImage) = playScreenViewModel.getTrackMetadata(resId)
-                        // Convert form ByteArray to Bitmap
+                        // Convert form ByteArray metadata to Bitmap
                         val trackPainter = if (trackImage != null) {
                             BitmapPainter(
                                 BitmapFactory.decodeByteArray(
@@ -305,8 +323,9 @@ fun PlayScreen(
                             )
                         } else {
                             painterResource(id = R.drawable.default_sound_pic)
-                        }
+                        } // show default image if no album art
 
+                        // row composable to show image and title
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

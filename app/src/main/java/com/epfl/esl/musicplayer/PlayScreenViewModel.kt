@@ -23,18 +23,40 @@ import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 import kotlin.math.roundToInt
 
+//data class to hold extracted metadata
 data class Metadata(val title: String, val cover: ByteArray?)
 
-class PlayScreenViewModel (
-    application : Application,
-    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application),
-    private val dataClient : DataClient
-) : AndroidViewModel(application) {
+/*
+    Play Screen ViewModel
 
+    Functionality:
+    hold state to update play screen UI
+    manage song queue updates
+    receive input from :
+        - PlayScreen: Play/Pause, fast forward, rewind, shuffle, loop, seek, queue skips
+        - Main Activity: Play/Pause from minimized player
+        - Main Activity: Play/Pause, fast forward, rewind from smartwatch messages
+        - DiscoverScreen/SelectedPlaylistScreen: Update song queue
+    manage equalization and sound FX from equalizer viewModel State
+    send song metadata to wear module
+ */
+
+
+
+
+class PlayScreenViewModel (
+    application : Application, // to retrieve context
+    private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application), //manage equalization and sound FX
+    private val dataClient : DataClient //send music metadata to watch
+) : AndroidViewModel(application) // viewmodel structure that is context aware
+{
+    // get application context
     val context = getApplication<Application>().applicationContext
+
+    //initialize audio player service
     private val audioPlayer = AudioPlayerService(application.applicationContext)
 
-    // Service variables
+    // Audio Service variables
     val isPlaying: LiveData<Boolean?> = audioPlayer.isPlaying
     val currentPosition: LiveData<Int> = audioPlayer.currentPosition
     val duration: LiveData<Int> = audioPlayer.duration
@@ -42,19 +64,20 @@ class PlayScreenViewModel (
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
-    private var isPlayerInitialized = false
-    var originalPlaylist by mutableStateOf(emptyList<String>())
-    var currentPlaylist by mutableStateOf(originalPlaylist)
-    var currentTrackIndex by mutableStateOf(-1) // Don't want any music highlighted in initalization
+    // viewModel variables
+    private var isPlayerInitialized = false //to correctly init audio player module
+    var originalPlaylist by mutableStateOf(emptyList<String>()) //List of paths to tracks in cache memory
+    var currentPlaylist by mutableStateOf(originalPlaylist)  //copy playlist to manage shuffle/repeat
+    var currentTrackIndex by mutableStateOf(-1) //Special init value to not display tracks when no queue is loaded
 
+    // State variables for PlayScreen
     private val _shuffleOn = MutableLiveData(false)
     val shuffleOn: LiveData<Boolean> = _shuffleOn
 
     private val _repeatMode = MutableLiveData(0)
     val repeatMode: LiveData<Int> = _repeatMode
 
-    // Function to put Album covers into the same size
-
+    // Function to put scale album covers to send to wear (data api sends <1Mb at a time and always have same size on watch)
     fun scaleTo80dp(context: Context, bitmap: Bitmap): Bitmap {
         val density = context.resources.displayMetrics.density
         val sizePx = (80f * density).roundToInt()
@@ -74,13 +97,13 @@ class PlayScreenViewModel (
 
 
     // Function to send Song Data to the wear module
-
      fun sendSongDataToWear(dataClient: DataClient) {
 
         viewModelScope.launch {
 
             val ctx = getApplication<Application>().applicationContext
 
+            // get track metadata to send
             val currentTitle = title.value ?: "No Title"
             val currentlyPlaying = isPlaying.value ?: false
             val coverArtBytes = coverImage.value
@@ -88,99 +111,99 @@ class PlayScreenViewModel (
 
             Log.d("PlayScreenViewModel", "Preparing to send song data to watch: '$currentTitle'")
 
-            val lastsongId = currentTitle;
-
+            //check if there is an available receiver, else don't send
             if (!hasConnectedWatch(ctx)) {
                 Log.d("PlayScreenViewModel", "No connected watch node -> skip sending")
                 return@launch
             }
 
-            if (currentTitle == lastsongId){
-                try {
-                    // specific path for static song infos
 
-                    val putStaticDataRequest: PutDataRequest = PutDataMapRequest.create("/static_songInfo").run {
-                        dataMap.putLong("timestamp", System.currentTimeMillis())
-                        dataMap.putString("songTitle", lastsongId)
-                        dataMap.putBoolean("isPlaying", currentlyPlaying)
-                        dataMap.putInt("duration",duration)
-                        // If coverArtBytes is not null, put it directly into the dataMap.
-                        if (coverArtBytes != null) {
+            try { //wrap in try statement in case no data module is available
+                // put metadata in datamap to send
+                val putStaticDataRequest: PutDataRequest = PutDataMapRequest.create("/static_songInfo").run {
+                    dataMap.putLong("timestamp", System.currentTimeMillis())
+                    dataMap.putString("songTitle", currentTitle)
+                    dataMap.putBoolean("isPlaying", currentlyPlaying)
+                    dataMap.putInt("duration",duration)
 
+                    // If coverArtBytes is not null, put it directly into the dataMap.
+                    if (coverArtBytes != null) {
 
-                            // Get the bitmap from byte array since, the bitmap has the the resize function
-                            val bitmapImage =
-                                (BitmapFactory.decodeByteArray(coverArtBytes, 0, coverArtBytes.size))
-
-
-                            // New bitmap with the correct size , may not return a null object
-                            // In order to keep everything the same size , we'll scale it to 80dp
-
-                            val mutableBitmapImage = scaleTo80dp(ctx,bitmapImage)
+                        // Get the bitmap from byte array since, the bitmap has the the resize function
+                        val bitmapImage =
+                            (BitmapFactory.decodeByteArray(coverArtBytes, 0, coverArtBytes.size))
 
 
-                            // Get the byte array from tbe bitmap to be returned
-                            val outputStream = ByteArrayOutputStream()
-                            mutableBitmapImage.compress(Bitmap.CompressFormat.PNG, 0, outputStream)
+                        // rescale image to correct format
+                        val mutableBitmapImage = scaleTo80dp(ctx,bitmapImage)
 
-                            if (mutableBitmapImage != bitmapImage) {
-                                mutableBitmapImage.recycle()
-                            } // else they are the same, just recycle once
 
-                            bitmapImage.recycle()
-                            val sentCover= outputStream.toByteArray()
-                            dataMap.putByteArray("albumArt",sentCover)
-//2
-                        }
-                        asPutDataRequest()
+                        // Get the byte array from tbe bitmap to be returned
+                        val outputStream = ByteArrayOutputStream()
+                        mutableBitmapImage.compress(Bitmap.CompressFormat.PNG, 0, outputStream)
+
+                        if (mutableBitmapImage != bitmapImage) {
+                            mutableBitmapImage.recycle()
+                        } // else they are the same, just recycle once
+
+                        bitmapImage.recycle()
+                        val sentCover= outputStream.toByteArray()
+                        dataMap.putByteArray("albumArt",sentCover)
+
                     }
-
-                    putStaticDataRequest.setUrgent()
-
-                    val result = dataClient.putDataItem(putStaticDataRequest).await()
-                    Log.d("PhoneTx", "putDataItem OK uri=${result.uri}")
-
-                    Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
-
-                } catch (e: Exception) {
-                    Log.e("PlayScreenViewModel", "Failed to send Static song data to watch.", e)
+                    asPutDataRequest()
                 }
+
+                putStaticDataRequest.setUrgent()
+                // send data item to wear
+                val result = dataClient.putDataItem(putStaticDataRequest).await()
+                Log.d("PhoneTx", "putDataItem OK uri=${result.uri}")
+
+                Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
+
+            } catch (e: Exception) {
+                Log.e("PlayScreenViewModel", "Failed to send song data to watch.", e)
             }
+
 
         }
     }
 
-    // Pause/Play button
+    // handle Pause/Play button clicks
     fun onPlayPauseClick(){
-        if (isPlaying.value == true){
+        if (isPlaying.value == true){ //pause track if currently playing
             audioPlayer.pause()
         } else {
-            if (isPlayerInitialized) {
+            if (isPlayerInitialized) { // resume if track is initialized and on pause
                 audioPlayer.resume()
-            } else {
+            } else { // update audio player if track starts
                 playCurrentTrack()
                 isPlayerInitialized = true
             }
         }
         sendSongDataToWear(dataClient)
     }
-    // Left arrow button
+
+
+    // handle left arrow button clicks (rewind)
     fun onLeftArrowClick(){
+        //if arrow clicked at the beining of track (less than 3secs) play previous track (if exists)
         if (currentTrackIndex > 0 && currentPosition.value < 3000) {
             currentTrackIndex--
             playCurrentTrack()
-        } else {
+        } else { // if track has sufficiently been played, rewind to begining of track
             audioPlayer.rewind()
         }
         sendSongDataToWear(dataClient)
     }
-    // Right arrow button
+    // handle right arrow button click (fast forward)
     fun onRightArrowClick() {
         sendSongDataToWear(dataClient)
 
-        if (_repeatMode.value == 2){ // Repeat one mode
+        if (_repeatMode.value == 2){ // Repeat track mode
             audioPlayer.rewind()
         } else if (currentTrackIndex < currentPlaylist.size - 1) { // No repeat
+
             // Check if now-finished music is already present within playlist
             val currentTrack = currentPlaylist[currentTrackIndex]
             val existsBeforeCurrent = currentPlaylist.subList(0, currentTrackIndex).contains(currentTrack)
@@ -210,7 +233,7 @@ class PlayScreenViewModel (
             playCurrentTrack()
         }
     }
-    // Play track at current index (called by Play/Pause/Side arrows)
+    // update audioPlayer to track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
         try{
         currentTrackIndex = index
@@ -221,12 +244,14 @@ class PlayScreenViewModel (
             Log.d("playscreen","error")
         }
     }
-    // To get timing for slider
+
+    // handle timing for slider -> seek to new position in track
     fun onSeek(newPosition: Float){
         audioPlayer.seekTo(newPosition.toInt())
 
     }
 
+    //viewModel init function
     init {
         // Initialize equalizer
         audioPlayer.audioSessionId.observeForever { sessionId ->
@@ -239,7 +264,8 @@ class PlayScreenViewModel (
             onRightArrowClick()
         }
     }
-    // Shuffle button
+
+    // handle shuffle button click
     fun onShuffleClick() {
         _shuffleOn.value = !(_shuffleOn.value ?: false)
 
@@ -257,8 +283,10 @@ class PlayScreenViewModel (
             currentPlaylist = originalPlaylist
         }
     }
-    // Repeat button
+
+    // handle repeat button click
     fun onRepeatClick(){
+        //cylce through repeat states
         _repeatMode.value = when (_repeatMode.value) {
             0 -> 1    // Go to classic repeat of playlist
             1 -> 2    // Go to one track repeat
@@ -269,30 +297,31 @@ class PlayScreenViewModel (
     fun getTrackName(path: String): String {
         return path.substringAfterLast("/").substringBeforeLast(".")
     }
-    // For sheet queue
-    fun getTrackMetadata(resId: String): Metadata {
+
+    // get track metadata from path of .mp3 in cache
+    fun getTrackMetadata(resPath: String): Metadata {
         val retriever = MediaMetadataRetriever()
         return try {
             // Get URI
-            val uri = android.net.Uri.parse(resId)
+            val uri = android.net.Uri.parse(resPath)
             retriever.setDataSource(getApplication(), uri)
             // Extract title
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-                ?: getTrackName(resId) // If no title in metadata => return file name
+                ?: getTrackName(resPath) // If no title in metadata => return file name
             // Extract image
             val cover = retriever.embeddedPicture
 
             Metadata(title, cover)
         } catch (e: Exception) {
-            Metadata(getTrackName(resId), null) // If error => return file name
+            Metadata(getTrackName(resPath), null) // If error => return file name
         } finally {
             retriever.release()
         }
     }
 
+    // add specific track queue -> add the path of .mp3 in current Playlist list
     fun addToQueue(songRef: String) {
         // Add music right after the current track
-        //val track = originalPlaylist[index]
         val newPlaylist = currentPlaylist.toMutableList()
 
         // Insert at position currentTrackIndex + 1 (right after current track)
@@ -306,6 +335,7 @@ class PlayScreenViewModel (
         }
     }
 
+    // update song queue/tracklist (when clicking on a track in a playlist for example)
     fun changeQueue(queue:List<String>,idx:Int){
         originalPlaylist=queue
         currentPlaylist=queue
