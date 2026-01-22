@@ -94,7 +94,7 @@ class PlayScreenViewModel (
 
 
     // Function to send Song Data to the wear module
-     fun sendSongDataToWear(dataClient: DataClient) {
+     fun sendSongDataToWear(dataClient: DataClient,isnewTrack:Boolean=false) {
 
         viewModelScope.launch {
 
@@ -105,6 +105,7 @@ class PlayScreenViewModel (
             val currentlyPlaying = isPlaying.value ?: false
             val coverArtBytes = coverImage.value
             val duration = duration.value
+
 
             Log.d("PlayScreenViewModel", "Preparing to send song data to watch: '$currentTitle'")
 
@@ -122,6 +123,12 @@ class PlayScreenViewModel (
                     dataMap.putString("songTitle", currentTitle)
                     dataMap.putBoolean("isPlaying", currentlyPlaying)
                     dataMap.putInt("duration",duration)
+                    if (isnewTrack==true){
+                        dataMap.putInt("currentPosition",0)
+                    }
+                    else{
+                        dataMap.putInt("currentPosition",currentPosition.value)
+                    }
 
                     // If coverArtBytes is not null, put it directly into the dataMap.
                     if (coverArtBytes != null) {
@@ -166,6 +173,42 @@ class PlayScreenViewModel (
         }
     }
 
+    // Function to send only the timing info for when seek
+    fun sendSeek(dataClient: DataClient) {
+
+        viewModelScope.launch {
+
+            val ctx = getApplication<Application>().applicationContext
+
+            //check if there is an available receiver, else don't send
+            if (!hasConnectedWatch(ctx)) {
+                Log.d("PlayScreenViewModel", "No connected watch node -> skip sending")
+                return@launch
+            }
+
+
+            try { //wrap in try statement in case no data module is available
+                // put metadata in datamap to send
+                val putStaticDataRequest: PutDataRequest = PutDataMapRequest.create("/dynamic_songInfo").run {
+                    dataMap.putInt("currentPosition",currentPosition.value)
+                    asPutDataRequest()
+                }
+
+                putStaticDataRequest.setUrgent()
+                // send data item to wear
+                val result = dataClient.putDataItem(putStaticDataRequest).await()
+                Log.d("PhoneTx", "putDataItem OK uri=${result.uri}")
+
+                Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
+
+            } catch (e: Exception) {
+                Log.e("PlayScreenViewModel", "Failed to send song data to watch.", e)
+            }
+
+
+        }
+    }
+
     // handle Pause/Play button clicks
     fun onPlayPauseClick(){
         if (isPlaying.value == true){ //pause track if currently playing
@@ -188,14 +231,16 @@ class PlayScreenViewModel (
         if (currentTrackIndex > 0 && currentPosition.value < 3000) {
             currentTrackIndex--
             playCurrentTrack()
+            sendSongDataToWear(dataClient,isnewTrack = true)
         } else { // if track has sufficiently been played, rewind to begining of track
             audioPlayer.rewind()
+            sendSongDataToWear(dataClient)
         }
-        sendSongDataToWear(dataClient)
+
     }
     // handle right arrow button click (fast forward)
     fun onRightArrowClick() {
-        sendSongDataToWear(dataClient)
+
 
         if (_repeatMode.value == 2){ // Repeat track mode
             audioPlayer.rewind()
@@ -229,6 +274,7 @@ class PlayScreenViewModel (
             currentTrackIndex = 0
             playCurrentTrack()
         }
+        sendSongDataToWear(dataClient,isnewTrack = true)
     }
     // update audioPlayer to track at current index (called by Play/Pause/Side arrows)
     fun playCurrentTrack(index: Int = currentTrackIndex) {
@@ -245,6 +291,7 @@ class PlayScreenViewModel (
     // handle timing for slider -> seek to new position in track
     fun onSeek(newPosition: Float){
         audioPlayer.seekTo(newPosition.toInt())
+        sendSeek(dataClient)
 
     }
 

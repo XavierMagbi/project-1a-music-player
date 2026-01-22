@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.view.WindowManager
+import androidx.compose.runtime.remember
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var isPlaying by mutableStateOf(false)
     private var duration by mutableIntStateOf(0)
     private var countedPositionMs by mutableIntStateOf(0)
+    private var currentPosition by mutableIntStateOf(0)
 
 
     // Screen  variables
@@ -96,10 +98,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         wristFlickGyroDetector = WristFlickGyroDetector(
             onFlick = { dir ->
                 Log.d("Main Activity", "Movement Detected$dir")
-                if ( dir == WristFlickGyroDetector.Direction.RIGHT) {
+                if ( dir == WristFlickGyroDetector.Direction.LEFT) {
                     wearPlayViewModel.onRightArrowClick() // Skip Song 
                 }
-                if (dir == WristFlickGyroDetector.Direction.LEFT) {
+                if (dir == WristFlickGyroDetector.Direction.RIGHT) {
                     wearPlayViewModel.onPlayPauseClick() // Put Pause/Play
                 }
 
@@ -114,9 +116,15 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
                // Timer to update the progress bar
 
-               LaunchedEffect(isPlaying, songTitle) {
+               LaunchedEffect(songTitle) {
                    // Reset when a new song is received (songTitle changes)
                    countedPositionMs = 0
+
+               }
+
+               LaunchedEffect(isPlaying,currentPosition) {
+                   // Reset when a new song is received (songTitle changes)
+                   countedPositionMs = currentPosition
 
                    while (true) {
                        if (isPlaying) {
@@ -169,9 +177,12 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
+                currentPosition=dataMap.getInt("currentPosition",0)
                 songTitle = dataMap.getString("songTitle", "Unknown Title") // Extract song title using the correct key
                 isPlaying = dataMap.getBoolean("isPlaying", false) // Extract playback state
                 duration = dataMap.getInt("duration", 0)      //Extract duration
+
+                countedPositionMs = currentPosition
 
 
 
@@ -184,6 +195,13 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 }
 
                 applyScreenPolicy(isPlaying) // Keep the screen on when a music is playing
+            }
+
+        dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/dynamic_songInfo" }
+            .forEach { event ->
+                val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+                currentPosition=dataMap.getInt("currentPosition",0)
+                countedPositionMs = currentPosition
             }
     }
 
@@ -221,6 +239,7 @@ fun HomeScreen(
     flipButton:()-> Unit
     ) {
 
+    var progress by remember { mutableStateOf(0f) }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -263,7 +282,7 @@ fun HomeScreen(
             )
 
 
-            val progress = if (duration > 0) {
+            progress = if (duration > 0) {
                 countedPositionMs.toFloat() / duration.toFloat()
             } else {
                 0f
