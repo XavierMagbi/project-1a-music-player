@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.PowerManager
 import android.view.WindowManager
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -45,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,12 +71,13 @@ import kotlinx.coroutines.cancel
 class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var bitmap by mutableStateOf<Bitmap?>(null)
     private var songTitle by mutableStateOf("Hello World!")
-    private var currentSong by mutableStateOf(songTitle)
+    private var lastSongFingerprint by mutableStateOf<String?>(null)
     private var isPlaying by mutableStateOf(false)
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
     private lateinit var sensorManager: SensorManager // Variables to use Gyroscope for wrist shaking
     private var gyro: Sensor? = null
+    private var accel : Sensor?=null
     private lateinit var wristFlickGyroDetector: WristFlickGyroDetector
     // A scope tied to the Activity
     private val screenScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -96,11 +99,16 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 if (dir == WristFlickGyroDetector.Direction.LEFT || dir == WristFlickGyroDetector.Direction.RIGHT) {
                     wearPlayViewModel.onRightArrowClick()
                 }
+                if (dir == WristFlickGyroDetector.Direction.UP || dir == WristFlickGyroDetector.Direction.DOWN) {
+                    wearPlayViewModel.onPlayPauseClick()
+                }
 
                 // simplest: always "next"
                 // or: LEFT=prev, RIGHT=next
             }
         )
+
+
 
         setContent {
            Project1amusicplayerTheme {
@@ -123,8 +131,6 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             }
         }
 
-        //if (currentSong == songTitle){ pulseScreenFor(4_000L) }
-        // Turn on the screen for 4 seconds if the screen is awake
 
 
     }
@@ -140,12 +146,14 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 SensorManager.SENSOR_DELAY_GAME
             )
         }
+
         Log.d("Main Activity","addListener attached")
     }
     override fun onPause() {
         super.onPause()
         Wearable.getDataClient(this).removeListener(this)
         sensorManager.unregisterListener(wristFlickGyroDetector)
+
         Log.d("Main Activity","removedListener attached")
     }
 
@@ -156,14 +164,26 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
-                // Extract song title using the correct key
-                songTitle = dataMap.getString("songTitle", "Unknown Title")
+                val newTitle = dataMap.getString("songTitle", "Unknown Title") // Extract song title using the correct key
+                val newIsPlaying = dataMap.getBoolean("isPlaying", false) // Extract playback state
+                val newDuration = dataMap.getInt("duration", 0)      //Extract duration
 
-                // Extract playback state
-                isPlaying = dataMap.getBoolean("isPlaying", false)
+                // --- NEW SONG DETECTION ---
+                val newFingerprint = makeSongFingerprint(newTitle, newDuration)
 
-                //Extract duration
-                 duration = dataMap.getInt("duration",0)
+                if (lastSongFingerprint == null) {
+                    lastSongFingerprint = newFingerprint
+                } else if (newFingerprint != lastSongFingerprint) {
+                    // New song -> wake screen + keep awake briefly
+                    lastSongFingerprint = newFingerprint
+                   // wakeThenPulseScreen(pulseMs = 1_000L)
+                    Log.d("WearScreen", "New song detected -> wake: $newFingerprint")
+                }
+
+                // Updating the UI
+                songTitle = newTitle
+                isPlaying = newIsPlaying
+                 duration = newDuration
 
                 // Extract album art image bytes using the correct key
                 val receivedImageBytes: ByteArray? = dataMap.getByteArray("albumArt")
@@ -182,20 +202,35 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     // UNUSED FOR NOW CHECK WHEN IMPLEMENTED
-    private fun pulseScreenFor(delayMs: Long = 4_000L) {
-        // Keep screen on now
+    private fun wakeThenPulseScreen(
+        pulseMs: Long = 4_000L,
+        wakeMs: Long = 800L
+    ) {
+        // 1) Wake the display briefly
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        val wl = pm.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "MusicPlayerWear:SongChangeWake"
+        )
+        wl.acquire(wakeMs)
+        wl.release()
+
+        // 2) Keep screen on for pulseMs, then allow it to sleep normally
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        Log.d("WearScreen", "KEEP_SCREEN_ON enabled")
+        Log.d("WearScreen", "KEEP_SCREEN_ON enabled (pulse=$pulseMs ms)")
 
-        // Cancel any previously scheduled "turn off"
         turnOffJob?.cancel()
-
-        // Schedule clearing the flag after delay
         turnOffJob = screenScope.launch {
-            delay(delayMs)
+            delay(pulseMs)
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             Log.d("WearScreen", "KEEP_SCREEN_ON cleared (system may turn screen off)")
         }
+
+    }
+
+    // Function to check when there is a new song or not
+    private fun makeSongFingerprint(title: String, durationMs: Int): String {
+        return "$title|$durationMs"
     }
 }
 
@@ -245,14 +280,15 @@ fun HomeScreen(
                 style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
                 maxLines = 1, // Number of Line
                 softWrap = false, // Prevent Wrapping of text
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .padding(horizontal = 10.dp)
-                    .basicMarquee(
-                        iterations = Int.MAX_VALUE,
-                        animationMode = Immediately,
-                        repeatDelayMillis = 2,
-                        velocity = 10.dp
-                    )// Prevent text from touching screen edges
+                    //.basicMarquee(
+                        //iterations = Int.MAX_VALUE,
+                        //animationMode = Immediately,
+                        //repeatDelayMillis = 2,
+                        //velocity = 10.dp
+                    //)// Prevent text from touching screen edges
             )
 
 
