@@ -1,8 +1,3 @@
-/* While this template provides a good starting point for using Wear Compose, you can always
- * take a look at https://github.com/android/wear-os-samples/tree/main/ComposeStarter to find the
- * most up to date changes to the libraries and their usages.
- */
-
 package com.epfl.esl.musicplayer.presentation
 
 import android.graphics.Bitmap
@@ -73,13 +68,12 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     // Data Variables
     private var bitmap by mutableStateOf<Bitmap?>(null)
     private var songTitle by mutableStateOf("No Music for now...")
-    private var lastSongFingerprint by mutableStateOf<String?>(null)
     private var isPlaying by mutableStateOf(false)
     private var duration by mutableIntStateOf(0)
     private var countedPositionMs by mutableIntStateOf(0)
 
 
-    // Screen on variable
+    // Screen  variables
     private val screenScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var screenJob: Job? = null
 
@@ -103,13 +97,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             onFlick = { dir ->
                 Log.d("Main Activity", "Movement Detected$dir")
                 if ( dir == WristFlickGyroDetector.Direction.RIGHT) {
-                    wearPlayViewModel.onRightArrowClick()
+                    wearPlayViewModel.onRightArrowClick() // Skip Song 
                 }
                 if (dir == WristFlickGyroDetector.Direction.LEFT) {
-                    wearPlayViewModel.onLeftArrowClick()
-                }
-                if (dir == WristFlickGyroDetector.Direction.UP || dir == WristFlickGyroDetector.Direction.DOWN) {
-                    wearPlayViewModel.onPlayPauseClick()
+                    wearPlayViewModel.onPlayPauseClick() // Put Pause/Play
                 }
 
             }
@@ -142,7 +133,6 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     isPlaying,
                     countedPositionMs,
                     duration,
-                    // These click handlers are placeholders for now
                     flipButton = {isPlaying=!isPlaying},
                     wearPlayViewModel = wearPlayViewModel
 
@@ -185,9 +175,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
 
 
-
-
-                // Extract album art image bytes using the correct key
+                // Extract album art image bytes 
                 val receivedImageBytes: ByteArray? = dataMap.getByteArray("albumArt")
 
                 // Convert the byte array to a bitmap and update the state
@@ -218,12 +206,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         }
     }
 
-
-
-
 }
-
-
 
 
 @Composable
@@ -368,8 +351,6 @@ fun formatTime2(milliseconds: Int): String {
 }
 
 
-
-
 @Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 
 @Composable
@@ -386,5 +367,3 @@ fun HomeScreenPreview() {
 
     )
 }
-
-
