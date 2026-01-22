@@ -98,7 +98,6 @@ class DiscoverViewModel(
                         // Add music metadata to list
                         songList.add(musicMetadata(title, coverImage, link, datapath = songFile.absolutePath))
                         _songs.value = songList.toList() // Update LiveData
-
                         // Filter songs based on current search query
                         filterSongs(_searchQuery.value ?: "")
                         // Delete temp file
