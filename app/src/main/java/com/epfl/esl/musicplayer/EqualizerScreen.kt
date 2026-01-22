@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
 
 /*
     Equalizer Screen Composable
@@ -135,8 +136,13 @@ fun EqualizerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Text(
+                        text = "Press pad to play sound effect!",
+                        fontSize = 20.sp,
+                    )
                     // Row 1 (Pad sound 0 to 2)
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
