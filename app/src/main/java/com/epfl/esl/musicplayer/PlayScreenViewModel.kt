@@ -7,20 +7,14 @@ import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.launch
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.wearable.DataClient
-import com.google.android.gms.wearable.MessageClient
-import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
@@ -90,7 +84,6 @@ class PlayScreenViewModel (
             val currentTitle = title.value ?: "No Title"
             val currentlyPlaying = isPlaying.value ?: false
             val coverArtBytes = coverImage.value
-            val currentPosition = currentPosition.value?:0
             val duration = duration.value
 
             Log.d("PlayScreenViewModel", "Preparing to send song data to watch: '$currentTitle'")
@@ -113,10 +106,6 @@ class PlayScreenViewModel (
                         dataMap.putInt("duration",duration)
                         // If coverArtBytes is not null, put it directly into the dataMap.
                         if (coverArtBytes != null) {
-
-
-                            // PNG has not losses, it just ignores this field when compressing
-                            val COMPRESS_QUALITY = 0
 
 
                             // Get the bitmap from byte array since, the bitmap has the the resize function
@@ -156,24 +145,6 @@ class PlayScreenViewModel (
                 } catch (e: Exception) {
                     Log.e("PlayScreenViewModel", "Failed to send Static song data to watch.", e)
                 }
-            }
-
-            try {
-                // specific path for dynamic song infos
-                val putDynamicDataRequest: PutDataRequest = PutDataMapRequest.create("/dynamic_songInfo").run {
-                    dataMap.putInt("currentPosition", currentPosition)
-                    asPutDataRequest()
-                }
-
-                putDynamicDataRequest.setUrgent()
-
-                val result = dataClient.putDataItem(putDynamicDataRequest).await()
-                Log.d("PhoneTx", "putDataItem OK uri=${result.uri}")
-
-                Log.d("PlayScreenViewModel", "Successfully sent song data to watch.")
-
-            } catch(e: Exception){
-                Log.e("PlayScreenViewModel", "Failed to send Dynamic song data to watch.", e)
             }
 
         }

@@ -2,6 +2,8 @@ package com.epfl.esl.musicplayer.presentation
 
 
 import android.app.Application
+import android.util.Log
+import android.view.WindowManager
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.tasks.Tasks
 import androidx.lifecycle.AndroidViewModel
@@ -10,13 +12,12 @@ import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
 class WearPlayViewModel(app: Application) : AndroidViewModel(app) {
-
-
 
 
     val context = getApplication<Application>().applicationContext
@@ -83,5 +84,6 @@ class WearPlayViewModel(app: Application) : AndroidViewModel(app) {
 
     }
 
+    
 
 }

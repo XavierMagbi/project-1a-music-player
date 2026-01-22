@@ -22,7 +22,7 @@ class WristFlickGyroDetector(
         if (now - lastTriggerTime < cooldownMs) return
         if (magnitude >= magnitudeThreshold) {
             // Optional: infer direction from one axis (device-dependent!)
-            // Many watches: wz often corresponds to twist about screen normal.
+            // We use wx to Play/Pause and wz to switch music
             val direction = when {
                 wx >= axisThreshold -> Direction.RIGHT
                 wx <= -axisThreshold -> Direction.LEFT

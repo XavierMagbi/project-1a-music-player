@@ -63,6 +63,10 @@ import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.view.WindowManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
@@ -71,11 +75,13 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var songTitle by mutableStateOf("No Music for now...")
     private var lastSongFingerprint by mutableStateOf<String?>(null)
     private var isPlaying by mutableStateOf(false)
-    private var currentPosition by mutableIntStateOf(0)
     private var duration by mutableIntStateOf(0)
     private var countedPositionMs by mutableIntStateOf(0)
 
-    // Timer View model
+
+    // Screen on variable
+    private val screenScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var screenJob: Job? = null
 
 
     // Sensor variables for wrist movement detection
@@ -96,15 +102,16 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         wristFlickGyroDetector = WristFlickGyroDetector(
             onFlick = { dir ->
                 Log.d("Main Activity", "Movement Detected$dir")
-                if (dir == WristFlickGyroDetector.Direction.LEFT || dir == WristFlickGyroDetector.Direction.RIGHT) {
+                if ( dir == WristFlickGyroDetector.Direction.RIGHT) {
                     wearPlayViewModel.onRightArrowClick()
+                }
+                if (dir == WristFlickGyroDetector.Direction.LEFT) {
+                    wearPlayViewModel.onLeftArrowClick()
                 }
                 if (dir == WristFlickGyroDetector.Direction.UP || dir == WristFlickGyroDetector.Direction.DOWN) {
                     wearPlayViewModel.onPlayPauseClick()
                 }
 
-                // simplest: always "next"
-                // or: LEFT=prev, RIGHT=next
             }
         )
 
@@ -113,6 +120,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         setContent {
            Project1amusicplayerTheme {
                 wearPlayViewModel = viewModel()
+
+               // Timer to update the progress bar
 
                LaunchedEffect(isPlaying, songTitle) {
                    // Reset when a new song is received (songTitle changes)
@@ -141,8 +150,6 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             }
         }
 
-
-
     }
 
     override fun onResume() {
@@ -157,43 +164,28 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             )
         }
 
-        Log.d("Main Activity","addListener attached")
+
     }
     override fun onPause() {
         super.onPause()
         Wearable.getDataClient(this).removeListener(this)
         sensorManager.unregisterListener(wristFlickGyroDetector)
 
-        Log.d("Main Activity","removedListener attached")
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
-        //Log.d("Main Activity","rx")
         dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/static_songInfo" }
             .forEach { event ->
 
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
-                val newTitle = dataMap.getString("songTitle", "Unknown Title") // Extract song title using the correct key
-                val newIsPlaying = dataMap.getBoolean("isPlaying", false) // Extract playback state
-                val newDuration = dataMap.getInt("duration", 0)      //Extract duration
+                songTitle = dataMap.getString("songTitle", "Unknown Title") // Extract song title using the correct key
+                isPlaying = dataMap.getBoolean("isPlaying", false) // Extract playback state
+                duration = dataMap.getInt("duration", 0)      //Extract duration
 
-                // --- NEW SONG DETECTION ---
-                val newFingerprint = makeSongFingerprint(newTitle, newDuration)
 
-                if (lastSongFingerprint == null) {
-                    lastSongFingerprint = newFingerprint
-                } else if (newFingerprint != lastSongFingerprint) {
-                    // New song -> wake screen + keep awake briefly
-                    lastSongFingerprint = newFingerprint
-                    //wakeThenPulseScreen(pulseMs = 1_000L)
-                    Log.d("WearScreen", "New song detected -> wake: $newFingerprint")
-                }
 
-                // Updating the UI
-                songTitle = newTitle
-                isPlaying = newIsPlaying
-                 duration = newDuration
+
 
                 // Extract album art image bytes using the correct key
                 val receivedImageBytes: ByteArray? = dataMap.getByteArray("albumArt")
@@ -202,22 +194,31 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 bitmap = receivedImageBytes?.let {
                     BitmapFactory.decodeByteArray(it, 0, it.size)
                 }
-            }
-        dataEvents.filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/dynamic_songInfo" }
-            .forEach { event ->
-                val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
-                currentPosition = dataMap.getInt("currentPosition", 0)
+                applyScreenPolicy(isPlaying) // Keep the screen on when a music is playing
             }
     }
 
-    // UNUSED FOR NOW CHECK WHEN IMPLEMENTED
 
+    private fun applyScreenPolicy(isPlaying: Boolean) {
+        // Cancel any pending transitions
+        screenJob?.cancel()
 
-    // Function to check when there is a new song or not
-    private fun makeSongFingerprint(title: String, durationMs: Int): String {
-        return "$title|$durationMs"
+        if (isPlaying) {
+            // Keep interactive while playing
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            Log.d("WearScreen", "KEEP_SCREEN_ON while playing")
+        } else {
+            // Pause: keep it on briefly, then allow ambient/sleep
+            screenJob = screenScope.launch {
+                delay(3_000L)
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                Log.d("WearScreen", "KEEP_SCREEN_ON cleared after pause delay")
+            }
+        }
     }
+
+
 
 
 }
