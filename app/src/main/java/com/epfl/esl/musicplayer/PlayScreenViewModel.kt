@@ -41,19 +41,16 @@ data class Metadata(val title: String, val cover: ByteArray?)
     send song metadata to wear module
  */
 
-
-
-
 class PlayScreenViewModel (
     application : Application, // to retrieve context
     private val equalizerViewModel: EqualizerViewModel = EqualizerViewModel(application), //manage equalization and sound FX
     private val dataClient : DataClient //send music metadata to watch
 ) : AndroidViewModel(application) // viewmodel structure that is context aware
 {
-    // get application context
+    // Get application context
     val context = getApplication<Application>().applicationContext
 
-    //initialize audio player service
+    // Initialize audio player service
     private val audioPlayer = AudioPlayerService(application.applicationContext)
 
     // Audio Service variables
@@ -64,7 +61,7 @@ class PlayScreenViewModel (
     val coverImage: LiveData<ByteArray?> = audioPlayer.cover
     val audioSessionId: LiveData<Int?> = audioPlayer.audioSessionId
 
-    // viewModel variables
+    // ViewModel variables
     private var isPlayerInitialized = false //to correctly init audio player module
     var originalPlaylist by mutableStateOf(emptyList<String>()) //List of paths to tracks in cache memory
     var currentPlaylist by mutableStateOf(originalPlaylist)  //copy playlist to manage shuffle/repeat

@@ -82,8 +82,16 @@ import com.google.firebase.database.database
 import com.google.firebase.storage.storage
 import kotlinx.coroutines.runBlocking
 
-class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener {
-    private lateinit var dataClient: DataClient
+/*
+    App module MainActivity
+
+    Main activity hosting the different composables screens and navigation between them
+    Manages user login persistence with ROOM DB and profile image update with Firebase Storage
+*/
+class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListener {
+    private lateinit var dataClient: DataClient // For Wear module data layer communication
+
+    // For top level user info storage
     private var username by mutableStateOf("")
     private var imageUri by mutableStateOf<Uri?>(null)
     private var uriString by mutableStateOf("")
@@ -96,8 +104,10 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
     private val storageRef = Firebase.storage.reference
     private val profileRef = Firebase.database.getReference("Profiles")
 
+    // Top level instantiation of PlayScreenViewModel
     private lateinit var playScreenViewModel: PlayScreenViewModel
 
+    // === Lifecycle On create ===
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,7 +117,8 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
 
         var initialRoute = "login" // Default start at login
         var shouldShowBarsInit = false // So top and bottom bars are shown in direct login too
-
+        
+        // For direct login if user has already signed in
         // Wait for ROOM DB to respond
         runBlocking {
             val userDb = DatabaseProvider.getDatabase(this@MainActivity) // Get instance
@@ -137,7 +148,9 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                     }
                 }
 
+                // Instantiate Top Level ViewModels
                 val equalizerViewModel: EqualizerViewModel = viewModel()
+                val musicScreenViewModel:MusicScreenViewModel= viewModel()
                 playScreenViewModel =  viewModel {
                     PlayScreenViewModel(
                         this@MainActivity.application,
@@ -145,14 +158,14 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                         dataClient
                     )
                 }
-                val musicScreenViewModel:MusicScreenViewModel= viewModel()
 
+                // Navigation controller and drawer state
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 var shouldShowBars by rememberSaveable { mutableStateOf(shouldShowBarsInit) }
 
-
+                // Drawer menu
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -201,13 +214,14 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                 modifier = Modifier.padding(top = 16.dp)
                             )
                         }
-
                     }
                 ) {
                     Scaffold(
+                        // Top bar
                         topBar = {
                             if (shouldShowBars) {
                                 TopAppBar(
+                                    // Drawer menu icon
                                     navigationIcon = {
                                         IconButton(onClick = {
                                             scope.launch {
@@ -222,9 +236,11 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                             )
                                         }
                                     },
+                                    // App name
                                     title = {
                                         Text(text = stringResource(id = R.string.app_name))
                                     },
+                                    // Profile picture
                                     actions = {
                                         AsyncImage(
                                             model = imageUri,
@@ -237,12 +253,10 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                 )
                             }
                         },
+                        // Bottom bar
                         bottomBar = {
-
                             if (shouldShowBars) {
-                                val currentPosition by playScreenViewModel.currentPosition.observeAsState(
-                                    0
-                                )
+                                val currentPosition by playScreenViewModel.currentPosition.observeAsState(0)
                                 val duration by playScreenViewModel.duration.observeAsState()
                                 val isPlaying by playScreenViewModel.isPlaying.observeAsState()
                                 val title by playScreenViewModel.title.observeAsState()
@@ -265,7 +279,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                         playScreenViewModel.currentTrackIndex!=-1
                                         &&  navBackStackEntry?.destination?.route !="musicPlayer"
                                         ) { // Card to be visible only once a music has been picked
-
+                                        // Music card
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -281,6 +295,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                                     .padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
+                                                // Music played image
                                                 Image(
                                                     painter = painter,
                                                     contentDescription = null,
@@ -288,23 +303,22 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                                         .size(60.dp)
                                                         .padding(8.dp)
                                                 )
+                                                // Music played title
                                                 Text(
                                                     text = title ?: "No Title",
                                                     modifier = Modifier.weight(1f),
                                                     overflow = TextOverflow.Ellipsis,
                                                     maxLines = 1
                                                 )
+                                                // Play/Pause button for played music
                                                 IconButton(onClick = { playScreenViewModel.onPlayPauseClick() }) {
                                                     Icon(
                                                         imageVector = if (isPlaying == true) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                                         contentDescription = "Play/Pause on card"
                                                     )
                                                 }
-
-
                                             }
-
-                                            // Time indicator
+                                            // Music played time indicator
                                             LinearProgressIndicator(
                                                 progress = {
                                                     if ((duration
@@ -316,16 +330,12 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                                 modifier = Modifier.fillMaxWidth()
                                             )
                                         }
-
-
                                     }
-
-
-
+                                    // Navigation bar
                                     NavigationBar {
                                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                                         val currentRoute = navBackStackEntry?.destination?.route
-
+                                        // Home button
                                         NavigationBarItem(
                                             selected = currentRoute == "home",
                                             onClick = {
@@ -342,6 +352,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                             },
                                             label = { Text(getString(R.string.home_navigation_label)) }
                                         )
+                                        // Equalizer button
                                         NavigationBarItem(
                                             selected = currentRoute == "equalizer",
                                             onClick = {
@@ -358,6 +369,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                             },
                                             label = { Text(getString(R.string.equalizer_navigation_label)) }
                                         )
+                                        // Discover button
                                         NavigationBarItem(
                                             selected = currentRoute == "discover",
                                             onClick = {
@@ -374,6 +386,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                             },
                                             label = { Text(getString(R.string.discover_navigation_label)) }
                                         )
+                                        // Playlists button
                                         NavigationBarItem(
                                             selected = currentRoute == "music",
                                             onClick = {
@@ -395,12 +408,13 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                             }
                         }
                     ) { innerPadding ->
+                        // Top level navigation
                         NavHost(
                             navController = navController,
                             startDestination = initialRoute, // Start at login if no user is logged in or home otherwise
                             modifier = Modifier.padding(innerPadding)
-                        )
-                        {
+                        ){
+                            // LoginScreen
                             composable("login") {
                                 val context = LocalContext.current
                                 LoginProfileScreen(
@@ -409,7 +423,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                         imageUri = loginInfo.imageUri
                                         userKey = loginInfo.userKey
 
-                                        if (imageUri == null || username == "") { // Modifiable si on veut autoriser la connexion sans image
+                                        if (imageUri == null || username == "") { // Picking an image is required to proceed
                                             Toast.makeText(
                                                 context, "Pick an image and a username!",
                                                 Toast.LENGTH_SHORT
@@ -419,6 +433,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                                 imageUri.toString(),
                                                 StandardCharsets.UTF_8.toString()
                                             )
+                                            // Show top and bottom bars after login
                                             shouldShowBars = true
                                             navController.navigate("home") {
                                                 popUpTo(navController.graph.id) {
@@ -430,11 +445,13 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     dataClient
                                 )
                             }
+                            // HomeScreen
                             composable("home") {
                                 HomeScreen(
                                     currentUsername = username
                                 )
                             }
+                            // EqualizerScreen
                             composable("equalizer") {
                                 val audioSessionId by playScreenViewModel.audioSessionId.observeAsState(
                                     0
@@ -444,6 +461,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     audioSessionId = audioSessionId ?: 0
                                 )
                             }
+                            // DiscoverScreen
                             composable("discover") {
                                 DiscoverScreen(
                                     currentUsername = username,
@@ -458,6 +476,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     }
                                 )
                             }
+                            // MusicScreen
                             composable("music") {
                                 MusicScreen(
                                     application = this@MainActivity.application,
@@ -465,32 +484,54 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     //playScreenViewModel = playScreenViewModel,
                                     onSongClicked = { idx, queue ->
                                         playScreenViewModel.changeQueue(queue, idx)
-
                                         navController.navigate("musicPlayer")
-
                                     },
                                     onAddQueue = {song->
                                         playScreenViewModel.addToQueue(song)
-
                                     },
                                     musicScreenViewModel = musicScreenViewModel
                                 )
                             }
+                            // PlayScreen (Navigate to it if pressed on the bottom music card)
                             composable("musicPlayer") {
                                 PlayScreen(
                                     onArrowClicked = {
-
                                         navController.popBackStack()
                                     },
                                     playScreenViewModel = playScreenViewModel
                                 )
-
                             }
                         }
-
                     }
                 }
             }
+        }
+    }
+
+
+    // === Lifecycle On resume ===
+    override fun onResume() {
+        super.onResume()
+        Wearable.getMessageClient(this).addListener(this)
+        Log.d("Main Activity","addListener attached")
+    }
+    // === Lifecycle On pause ===
+    override fun onPause() {
+        super.onPause()
+        Wearable.getMessageClient(this).removeListener(this)
+        Log.d("Main Activity","removedListener attached")
+    }
+
+    // === Wear message received handler ===
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        if(messageEvent.path == "PlayPause"){
+            playScreenViewModel.onPlayPauseClick()
+        }
+        if(messageEvent.path == "LeftArrow"){
+            playScreenViewModel.onLeftArrowClick()
+        }
+        if(messageEvent.path == "RightArrow"){
+            playScreenViewModel.onRightArrowClick()
         }
     }
 
@@ -520,9 +561,8 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
         }
     }
 
-    // Update the profile image URI (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
+    // Update the profile image from drawable menu (inspired from LoginProfileViewModel.kt which itself comes from EE-490(g) labs)
     private fun updateProfileImage(newImageUri: Uri) {
-
         // For transformations such as scaling
         val matrix = Matrix()
         // Get the image bitmap from the URI
@@ -554,33 +594,6 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                 storageRef.toString() + "ProfileImages/" + username + ".jpg"
             )
         }
-    }
-
-
-
-    override fun onMessageReceived(messageEvent: MessageEvent) {
-
-        if(messageEvent.path == "PlayPause"){
-            playScreenViewModel.onPlayPauseClick()
-        }
-        if(messageEvent.path == "LeftArrow"){
-            playScreenViewModel.onLeftArrowClick()
-        }
-        if(messageEvent.path == "RightArrow"){
-            playScreenViewModel.onRightArrowClick()
-        }
-
-    }
-
-    override fun onResume() {
-        super.onResume()
-        Wearable.getMessageClient(this).addListener(this)
-        Log.d("Main Activity","addListener attached")
-    }
-    override fun onPause() {
-        super.onPause()
-        Wearable.getMessageClient(this).removeListener(this)
-        Log.d("Main Activity","removedListener attached")
     }
 }
 
