@@ -1,6 +1,7 @@
 package com.epfl.esl.musicplayer
 
 import android.graphics.Bitmap
+import android.net.Uri
 
 // ==== Data Classes ====
 
