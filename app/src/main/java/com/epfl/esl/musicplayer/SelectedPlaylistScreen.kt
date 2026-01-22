@@ -49,54 +49,69 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 
+/*
+    Selected Playlist Screen Composable
+
+    Functionality:
+    Displays playlist picture, name and songs in said playlist
+    Allows searching songs within the playlist
+    Allows navigating to PlayScreen when a song is clicked (with corresponding playlistId)
+    Allows deleting songs from playlist (if user's playlist)
+    Allows renaming playlist (if user's playlist)
+    Allows changing playlist picture (if user's playlist)
+    Allows adding songs to queue
+
+    Navigation:
+    Can navigate to it PlaylistScreen when a playlist is selected 
+    or when pressing back arrow from PlayScreen
+ */
+
+ // Selected Playlist Screen Composable
 @Composable
 fun SelectedPlaylistScreen(
     application: Application,
-    playlistId: String,
-    onSongClicked:(Int,List<String>)->Unit,
+    playlistId: String,                     // Selected playlist ID
+    onSongClicked:(Int,List<String>)->Unit, // To navigate to PlayScreen with selected song to play and its queue
     modifier: Modifier = Modifier,
     currentUsername: String,
-    onAddQueue:(String)->Unit
+    onAddQueue:(String)->Unit               // To add song to current queue
 ) {
-    val context = LocalContext.current
-    
+    // Instantiate ViewModel
     val selectedPlaylistViewModel: SelectedPlaylistViewModel = viewModel(factory = SelectedPlaylistViewModelFactory(playlistId,application,currentUsername))
-    val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")
-    val songs by selectedPlaylistViewModel.song_id.observeAsState(initial = emptyList())
-    val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())
-    val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")
-    //val newQueue by selectedPlaylistViewModel.newQueue.observeAsState(emptyList())
+    // Get variables from ViewModel
+    val searchQuery by selectedPlaylistViewModel.searchQuery.observeAsState(initial = "")               // For search bar
+    val filteredSongs by selectedPlaylistViewModel.filteredSongs.observeAsState(emptyList())            // Filtered songs based on search query   
+    val playlistName by selectedPlaylistViewModel.playlistName.observeAsState(initial="")               // Playlist name
+    val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)   // Playlist picture
+    val isMyPlaylist by selectedPlaylistViewModel.isMyPlaylist.observeAsState(initial = false)          // Whether the playlist belongs to the current user
 
-    // For playlist picture
-    val playlistImageUri by selectedPlaylistViewModel.playlistImageUri.observeAsState(initial = null)
-    // For access to change playlist picture (cannot change Friends' playlists)
-    val isMyPlaylist by selectedPlaylistViewModel.isMyPlaylist.observeAsState(initial = false)
+    // Composable variables
+    val context = LocalContext.current // For Toast messages
+    var showRenameDialog by remember { mutableStateOf(false) } // For playlist rename dialog
 
+    // To collect image from image picker
     // From EE-490(g) labs to get result from intent
     val resultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val uri = result.data?.data
-                selectedPlaylistViewModel.updatePlaylistImage(uri!!)
+                val uri = result.data?.data // Get image URI
+                selectedPlaylistViewModel.updatePlaylistImage(uri!!) // Send picked image URI to update playlist picture
             }
         }
     )
-    
-    // For rename dialog
-    var showRenameDialog by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
             LazyColumn() {
                 // Playlist picture
                 item{
+                    // If playlist has custom picture and was able to fetch it from Firebase Storage, display it
                     if (playlistImageUri != null){
                         AsyncImage(
                             model = playlistImageUri,
@@ -108,7 +123,7 @@ fun SelectedPlaylistScreen(
                                 .clickable(
                                     onClick = {
                                         if (isMyPlaylist){
-                                            // Open image picker
+                                            // Open image picker to update playlist picture
                                             val intent = Intent(Intent.ACTION_GET_CONTENT)
                                             intent.type = "image/*"
                                             resultLauncher.launch(intent)
@@ -127,7 +142,7 @@ fun SelectedPlaylistScreen(
                                 .clickable(
                                     onClick = {
                                         if (isMyPlaylist){
-                                            // Open image picker
+                                            // Open image picker to add a playlist picture
                                             val intent = Intent(Intent.ACTION_GET_CONTENT)
                                             intent.type = "image/*"
                                             resultLauncher.launch(intent)
@@ -144,13 +159,12 @@ fun SelectedPlaylistScreen(
                             .fillMaxWidth()
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center  //
+                        horizontalArrangement = Arrangement.Center
                     ){
                         Text(
                             text = playlistName,
                             textAlign = TextAlign.Center
                         )
-
                         if (isMyPlaylist) {
                             // To rename playlist (only if my playlist)
                             IconButton(
@@ -166,8 +180,7 @@ fun SelectedPlaylistScreen(
                         }
                     }
                 }
-
-                // Search bar
+                // Search bar to filter songs within playlist
                 item {
                     OutlinedTextField(
                         value = searchQuery,
@@ -185,22 +198,25 @@ fun SelectedPlaylistScreen(
                         singleLine = true
                     )
                 }
-
+                // Songs in playlist
                 items(filteredSongs.size) { index ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
                             .clickable( onClick = {
+                                // Allow navigating to PlayScreen with selected song only when all playlist songs are loaded
                                 if (selectedPlaylistViewModel.isPlaylistLoaded()) {
                                     onSongClicked(index, selectedPlaylistViewModel.getSongIdList())
                                 }
+                                //Else show toast
                                 else{
                                     Toast.makeText(context,"Wait for playlist to load",Toast.LENGTH_SHORT).show()
                                 }
                             }),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Song cover image if available, else default music cover image
                         if (filteredSongs[index].image != null) {
                             val bitmap = BitmapFactory.decodeByteArray(filteredSongs[index].image!!, 0, filteredSongs[index].image!!.size)
                             Image(
@@ -211,20 +227,20 @@ fun SelectedPlaylistScreen(
                                     .padding(end = 8.dp)
                             )
                         } else {
-                            Icon(
-                                imageVector = Icons.Filled.MusicNote,
-                                contentDescription = "Music file",
+                            Image(
+                                painter = painterResource(id = R.drawable.default_sound_pic),
+                                contentDescription = "Default playlist picture",
                                 modifier = Modifier
                                     .width(40.dp)
-                                    .padding(end = 8.dp)
-                            )
+                                        .padding(end = 8.dp)
+                                )
                         }
-
+                        // Song title "..." when title is null/loading
                         Text(
                             text = filteredSongs[index].title ?: "...",
                             modifier = Modifier.weight(1f)
                         )
-
+                        // Delete song from playlist button (only if my playlist)
                         if (isMyPlaylist) {
                             IconButton(onClick = {
                                 selectedPlaylistViewModel.deleteSong(
@@ -242,7 +258,7 @@ fun SelectedPlaylistScreen(
                                 )
                             }
                         }
-
+                        // Add song to queue button
                         IconButton(onClick = {
                             if (selectedPlaylistViewModel.isPlaylistLoaded()) {
                                 onAddQueue(filteredSongs[index].datapath)
@@ -256,13 +272,12 @@ fun SelectedPlaylistScreen(
                                 contentDescription = "Add to queue"
                             )
                         }
-
                     }
                 }
             }
         }
     }
-
+    // Playlist rename dialog
     if (showRenameDialog) {
         EditPlaylistDialog(
             onDismiss = { showRenameDialog = false },
@@ -271,16 +286,16 @@ fun SelectedPlaylistScreen(
     }
 }
 
-
+// Dialog Composable to rename playlist
 @Composable
 fun EditPlaylistDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit                             // Input: New playlist name
 ) {
-    var newPlaylistName by remember { mutableStateOf("") }
+    var newPlaylistName by remember { mutableStateOf("") }  // To store playlist updated name input    
     
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onDismiss,                       // If click outside dialog then close it
         title = { Text("Rename Playlist") },
         text = {
             TextField(

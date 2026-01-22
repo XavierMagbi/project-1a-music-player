@@ -1,16 +1,12 @@
 package com.epfl.esl.musicplayer
 
-import android.annotation.SuppressLint
-import android.app.Activity.RESULT_OK
 import android.app.Application
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -21,25 +17,55 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.AndroidViewModel
-import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 
+/*
+    Selected Playlist Screen ViewModel
 
+    Functionality:
+    Fetch songs in selected playlist and extract metadata for display
+    Allows to delete song from playlist
+    Allows to rename playlist and update playlist picture 
+    Allows to add songs to playback queue
+
+    Interacts with:
+    Firebase Realtime Database - to fetch selected playlist metadata and tracks
+    Firebase Storage - to fetch playlist songs .mp3 files and extract metadata
+ */
+
+ // ViewModel Factory as currentUsername and playlistId are required to identify playlists and its accesses
+// Inspiration EE-490(g) Week 5: ViewModels and System Services (slide 8)
+class SelectedPlaylistViewModelFactory(
+    private val playlistId: String,
+    private val application: Application,
+    private val currentUsername: String
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SelectedPlaylistViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SelectedPlaylistViewModel( playlistId =playlistId, application = application, currentUsername = currentUsername) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// ViewModel for SelectedPlaylistScreen
 class SelectedPlaylistViewModel(application : Application, playlistId: String, currentUsername: String) : AndroidViewModel(application){
+    // Get context to access cache directory
     val context = getApplication<Application>().applicationContext
-    // To be able to use the given parameters
+
     private val playlistId = playlistId
     private val currentUsername = currentUsername
 
+    // Firebase Realtime Database and Storage references
     private val database = FirebaseDatabase.getInstance()
     private val playlistsRef = database.getReference("Playlists")
-
     private val storage = FirebaseStorage.getInstance()
     val musicRef = storage.reference.child("Musics")
 
+    // ViewModel LiveData variables
     private val _playlistName = MutableLiveData<String>("")
     val playlistName: LiveData<String> get() = _playlistName
 
@@ -56,57 +82,54 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
     private val _filteredSongs = MutableLiveData<List<musicMetadata>>(emptyList())
     val filteredSongs: LiveData<List<musicMetadata>> = _filteredSongs
 
-    //private val _newQueue = MutableLiveData<List<String>>(emptyList())
-    //val newQueue : LiveData<List<String>> = _newQueue
-
     private val _playlistImageUri = MutableLiveData<Uri?>(null)
     val playlistImageUri: LiveData<Uri?> = _playlistImageUri   
 
     private val _isMyPlaylist = MutableLiveData<Boolean>(false)
     val isMyPlaylist: LiveData<Boolean> = _isMyPlaylist
 
+    // Initialize by loading songs from playlist
     init {
-        // Start listening for playlist changes
-        listenToPlaylist(playlistId)
-
+        listenToPlaylist(playlistId) 
     }
+
+    // Listen to changes in the selected playlist in Realtime Database
     private fun listenToPlaylist(playlistId: String) {
-
         val ref = playlistsRef.child(playlistId)
-
+        // Describe listener for playlist data
         playlistListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                _playlistName.value =  snapshot.child("name").getValue(String::class.java)
+                _playlistName.value =  snapshot.child("name").getValue(String::class.java) // Update playlist name
+               val playlistAuthor = snapshot.child("author").getValue(String::class.java)  // Get playlist author
+               _isMyPlaylist.value = (playlistAuthor == currentUsername)                   // Update access rights indicator
 
-               val playlistAuthor = snapshot.child("author").getValue(String::class.java)
-               _isMyPlaylist.value = (playlistAuthor == currentUsername)
-
-                // Get playlist image (stored as string in Realtime Database hence need to convert to URI)
+                // Get playlist image
                 val photoUrlString = snapshot.child("photo_URL").getValue(String::class.java)
                 _playlistImageUri.value = if (photoUrlString != null) Uri.parse(photoUrlString) else null   
-
+                // Get playlist tracks
                 val tracks = snapshot.child("tracks").children
                     .mapNotNull { it.getValue(String::class.java) }
                 _song_id.value=tracks
-
+                // Fetch songs metadata from their IDs paths
                 fetchSongsFromGsPaths(tracks)
-
             }
-
             override fun onCancelled(error: DatabaseError) {
                 // Optionally handle errors
             }
         }
-
+        // Attach listener to correct place in Realtime Database
         ref.addValueEventListener(playlistListener as ValueEventListener)
     }
 
+    // Update search query and filter songs accordingly
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
         filterSongs(query)
     }
 
+    // Filter songs based on search query (case-insensitive, starts with)
     private fun filterSongs(query: String) {
+        // If query is empty, show all songs
         val filtered = if (query.isEmpty()) {
             _songs.value ?: emptyList()
         } else {
@@ -117,31 +140,31 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
         _filteredSongs.value = filtered
     }
 
+    // Load songs from their gs:// paths in Firebase Storage, extract metadata and store in LiveData
     private fun fetchSongsFromGsPaths(songPaths: List<String>) {
-        val songList = MutableList<musicMetadata>(songPaths.size){ musicMetadata() }
-        _songs.value=List<musicMetadata>(songPaths.size){ musicMetadata(title = null) }
-        //_newQueue.value= emptyList() // reset the queue for this playlist
+        val songList = MutableList<musicMetadata>(songPaths.size){ musicMetadata() }    // Temporary list to hold songs
+        _songs.value=List<musicMetadata>(songPaths.size){ musicMetadata(title = null) } // Indicate loading state
 
         if (songPaths.isEmpty()) {
             _songs.value = emptyList()
             _filteredSongs.value = emptyList()
             return
         }
-
+        // For each song path in playlist
         songPaths.forEachIndexed() { idx, gsPath ->
+            // Get reference from gs:// path
             val fileRef = FirebaseStorage.getInstance().getReferenceFromUrl(gsPath)
-
             // Download MP3 directly to cache directory
             val tempFile = File(context.cacheDir, fileRef.name)
             fileRef.getFile(tempFile)
                 .addOnSuccessListener {
-
-                    // Extract metadata (cover image, title)
+                    // Set up retriever to extract metadata
                     val retriever = MediaMetadataRetriever()
                     retriever.setDataSource(tempFile.absolutePath)
-
+                    // Extract title
                     val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
                         ?: fileRef.name.replace(".mp3", "")
+                    // Extract cover image
                     val coverImage = retriever.embeddedPicture
                     retriever.release()
 
@@ -155,7 +178,6 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                     )
 
                     // Add to playback queue
-
                     try {
                         _songs.value = _songs.value.toMutableList().apply {
                             this[idx] = tempMusic
@@ -164,11 +186,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                         Log.d("PlaylistFetch","list changed!")
                     }
 
-
                     // Update LiveData for UI
-
                     filterSongs(_searchQuery.value ?: "")
-
                 }
                 .addOnFailureListener { e ->
                     Log.e("SelectedPlaylistVM", "Failed to download ${fileRef.name}: ${e.message}")
@@ -186,6 +205,7 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
         }
     }
 
+    // Get queue of song datapaths for playback
     fun getSongIdList():List<String>{
         val IdList:MutableList<String> =mutableListOf()
         _filteredSongs.value.forEach{item ->
@@ -193,7 +213,6 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
                 IdList.add(item.datapath)
             }
         }
-
         return IdList
     }
 
@@ -252,8 +271,8 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
         playlistsRef.child(playlistId).child("tracks").setValue(currentTracks)
     }
 
+    // Check if playlist songs are fully loaded (all titles have been changed from their initial null value)
     fun isPlaylistLoaded():Boolean{
-
         _songs.value.forEach{song->
             if (song.title==null){
                 return false
@@ -264,18 +283,3 @@ class SelectedPlaylistViewModel(application : Application, playlistId: String, c
 }
 
 
-
-class SelectedPlaylistViewModelFactory(
-    private val playlistId: String,
-    private val application: Application,
-    private val currentUsername: String
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SelectedPlaylistViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SelectedPlaylistViewModel( playlistId =playlistId, application = application, currentUsername = currentUsername) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
