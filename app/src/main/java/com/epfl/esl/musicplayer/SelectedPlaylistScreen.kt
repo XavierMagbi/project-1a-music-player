@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -163,7 +164,10 @@ fun SelectedPlaylistScreen(
                     ){
                         Text(
                             text = playlistName,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center ,
+                            modifier = Modifier.fillMaxWidth(0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         if (isMyPlaylist) {
                             // To rename playlist (only if my playlist)

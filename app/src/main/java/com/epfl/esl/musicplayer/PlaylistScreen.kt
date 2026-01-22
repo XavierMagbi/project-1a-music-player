@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -131,7 +132,9 @@ fun PlaylistScreen(
                             // Dispaly playlist title and creator
                             Text(
                                 text = "${myPlaylists[index].title ?: "Unknown title"} by ${myPlaylists[index].creator ?: "Unknown creator"}",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).fillMaxWidth(0.7f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
                             // Delete playlist button (only for user's own playlists)
                             IconButton(
@@ -192,7 +195,9 @@ fun PlaylistScreen(
                             // Display playlist title and creator
                             Text(
                                 text = "${friendsPlaylists[index].title ?: "Unknown title"} by ${friendsPlaylists[index].creator ?: "Unknown creator"}",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).fillMaxWidth(0.7f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }

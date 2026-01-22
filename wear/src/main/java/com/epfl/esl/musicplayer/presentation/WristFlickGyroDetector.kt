@@ -8,12 +8,12 @@ import kotlin.math.sqrt
 class WristFlickGyroDetector(
     private val onFlick: (Direction) -> Unit,
     private val magnitudeThreshold: Float = 4.0f,   // rad/s
-    private val axisThreshold: Float = 5.0f,        // rad/s
+    private val axisThreshold: Float = 5.5f,        // rad/s
     private val cooldownMs: Long = 700L,            // block repeated flicks
     private val windowMs: Long = 120L               // "movement burst" max duration to average
 ) : SensorEventListener {
 
-    enum class Direction { LEFT, RIGHT, UNKNOWN }
+    enum class Direction { LEFT, RIGHT,UP, UNKNOWN }
 
     private var lastTriggerTime = 0L
 
@@ -70,6 +70,7 @@ class WristFlickGyroDetector(
         val direction = when {
             avgWx >= axisThreshold -> Direction.RIGHT
             avgWx <= -axisThreshold -> Direction.LEFT
+            avgWy<=-axisThreshold->Direction.UP
             else -> Direction.UNKNOWN
         }
 

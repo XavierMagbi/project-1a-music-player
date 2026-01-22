@@ -102,7 +102,11 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     wearPlayViewModel.onRightArrowClick() // Skip Song 
                 }
                 if (dir == WristFlickGyroDetector.Direction.RIGHT) {
+                    wearPlayViewModel.onLeftArrowClick() // Rewind
+                }
+                if (dir==WristFlickGyroDetector.Direction.UP){
                     wearPlayViewModel.onPlayPauseClick() // Put Pause/Play
+
                 }
 
             }
