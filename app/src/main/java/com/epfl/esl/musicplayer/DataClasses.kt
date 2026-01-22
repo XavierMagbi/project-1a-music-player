@@ -27,3 +27,10 @@ data class playlistMetadata (
     val id: String? = "",
     val imageUri: Uri? = null
 )
+
+// Data class to hold login information after user authentication (in case user has not already logged in)
+data class LoginInfo(
+    val username: String,
+    val imageUri: Uri?,
+    val userKey: String
+)

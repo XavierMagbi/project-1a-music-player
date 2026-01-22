@@ -1,6 +1,5 @@
 package com.epfl.esl.musicplayer
 
-
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -52,21 +51,37 @@ import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.DataClient
 import kotlinx.coroutines.launch
 
+/*
+    Login Screen Composable
+    Code inspired by EE-490(g) labs
+
+    Functionality:
+    Allows new user to sign up with username, password and profile image
+    Allows existing user to sign in with username and password
+
+    Navigation:
+    Default screen in case a user is not already logged in
+    User has signed off through drawable menu
+ */
+
+// Login Screen Composable
 @Composable
 fun LoginProfileScreen(
-    onNavigateToNewRecording: ((LoginInfo) -> Unit),
-    dataClient: DataClient,
-    modifier: Modifier = Modifier,
+    onNavigateToNewRecording: ((LoginInfo) -> Unit),            // To pass user info to rest of app
+    dataClient: DataClient,                                     // To send data to Wear module
+    modifier: Modifier = Modifier,                               
     loginProfileViewModel: LoginProfileViewModel = viewModel()
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        var isLoading by remember { mutableStateOf(false) }
-        val username by loginProfileViewModel.username.observeAsState(initial = "")
-        val password by loginProfileViewModel.password.observeAsState(initial = "")
-        val imageUri by loginProfileViewModel.imageUri.observeAsState(initial = null)
+        // Composable variables
+        var isLoading by remember { mutableStateOf(false) } // For UI load animation
+        val context = LocalContext.current
+
+        // To collect image from image picker
+        // From EE-490(g) labs to get result from intent
         val resultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
             onResult = { result ->
@@ -76,40 +91,13 @@ fun LoginProfileScreen(
                 }
             }
         )
+        
+        // Get variables from ViewModel
+        val username by loginProfileViewModel.username.observeAsState(initial = "")
+        val password by loginProfileViewModel.password.observeAsState(initial = "")
+        val imageUri by loginProfileViewModel.imageUri.observeAsState(initial = null)
 
-        val context = LocalContext.current
-
-        LoginProfileContent(
-            imageUri = imageUri,
-            username = username,
-            password = password,
-            onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) },
-            onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) },
-            onSignInButtonClicked = {
-                isLoading = true
-                loginProfileViewModel.fetchProfile(context)
-            },
-            onSignUpButtonClicked = {
-                loginProfileViewModel.sendDataToFireBase(context)
-                loginProfileViewModel.sendDataToWear(context, dataClient)
-                val userData = LoginInfo(
-                    loginProfileViewModel.username.value ?: "",
-                    loginProfileViewModel.imageUri.value,
-                    loginProfileViewModel.key
-                )
-                onNavigateToNewRecording(userData)
-
-            },
-            onPickImageButtonClicked = {
-                val intent = Intent(Intent.ACTION_GET_CONTENT)
-                intent.type = "image/*"
-                resultLauncher.launch(intent)
-            },
-            modifier
-        )
-
-        val uploadSuccess by loginProfileViewModel.uploadSuccess
-            .observeAsState(initial = true)
+        val uploadSuccess by loginProfileViewModel.uploadSuccess.observeAsState(initial = true)
         if (uploadSuccess == false) {
             Toast.makeText(
                 context,
@@ -130,23 +118,51 @@ fun LoginProfileScreen(
             }
         }
 
-        val userImageLoadingFinished by loginProfileViewModel.userImageLoadingFinished
-            .observeAsState()
+        val userImageLoadingFinished by loginProfileViewModel.userImageLoadingFinished.observeAsState()
         userImageLoadingFinished?.let {
             val loginInfo = LoginInfo(
                 loginProfileViewModel.username.value ?: "",
                 loginProfileViewModel.imageUri.value,
                 loginProfileViewModel.key
             )
-            loginProfileViewModel.sendDataToWear(context, dataClient, true)
             onNavigateToNewRecording(loginInfo)
         }
+        
+        // Set up Login Profile Content Composable
+        LoginProfileContent(
+            imageUri = imageUri,
+            username = username,
+            password = password,
+            onUsernameChanged = { newValue -> loginProfileViewModel.updateUsername(newValue) }, // Update username textfield entered value
+            onPasswordChanged = { newValue -> loginProfileViewModel.updatePassword(newValue) }, // Update password textfield entered value
+            onSignInButtonClicked = { // Fetch profile from Firebase in case of sign in
+                isLoading = true
+                loginProfileViewModel.fetchProfile(context)
+            },
+            onSignUpButtonClicked = { 
+                isLoading = true
+                loginProfileViewModel.sendDataToFireBase(context)           // Register user to Firebase
+                val userData = LoginInfo(                                   // Prepare user data to send to rest of app
+                    loginProfileViewModel.username.value ?: "",
+                    loginProfileViewModel.imageUri.value,
+                    loginProfileViewModel.key
+                )
+                onNavigateToNewRecording(userData)                          // Navigate to rest of app
+            },
+            onPickImageButtonClicked = {                                    // Launch image picker intent
+                val intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.type = "image/*"
+                resultLauncher.launch(intent)
+            },
+            modifier
+        )
 
+        // Show loading animation if isLoading is true
         if (isLoading) {
             Column(modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background
-                    .copy(alpha = 0.5f)),
+                .copy(alpha = 0.5f)),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -159,13 +175,12 @@ fun LoginProfileScreen(
             }
         }
     }
-
-
 }
 
+// Login Profile Content Composable
 @Composable
 fun LoginProfileContent(
-    imageUri: Uri?,
+    imageUri: Uri?,     
     username: String,
     password: String,
     onUsernameChanged: (String) -> Unit,
@@ -176,13 +191,14 @@ fun LoginProfileContent(
     modifier: Modifier = Modifier,
     loginProfileViewModel: LoginProfileViewModel = viewModel()
 ) {
+    // Composable variables
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
+    val scope = rememberCoroutineScope() // For launching coroutines
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // If no image selected, show default image
         if (imageUri == null) {
             Image(
                 painter = painterResource(id = R.drawable.pick_image),
@@ -194,18 +210,20 @@ fun LoginProfileContent(
                         onPickImageButtonClicked()
                     }
             )
+        // Else show selected image
         } else {
             AsyncImage(
                 model = imageUri,
                 contentDescription = stringResource(R.string.picked_user_image),
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(400.dp)
+                    .height(200.dp)
                     .clickable {
                         onPickImageButtonClicked()
                     }
             )
         }
+        // Username input field
         TextField(
             value = username,
             onValueChange = onUsernameChanged,
@@ -218,6 +236,7 @@ fun LoginProfileContent(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
         )
+        // Password input field
         TextField(
             value = password,
             onValueChange = onPasswordChanged,
@@ -230,12 +249,16 @@ fun LoginProfileContent(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = modifier.fillMaxWidth()
         )
+        // Sign In button
         Button(
             onClick = {
+                // If no username has been entered
                 if (username.isBlank()) {
                     Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
+                // If no password has been entered
                 } else if (password.isBlank()) {
                     Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
+                // Else proceed with sign in
                 } else {
                     Log.d("LoginScreen", "Sign In button CLICKED!")
                     onSignInButtonClicked()
@@ -247,19 +270,21 @@ fun LoginProfileContent(
         ) {
             Text(text = stringResource(R.string.sign_in_button_text))
         }
+        // Sign Up button
         OutlinedButton(
             onClick = {
                 scope.launch {
+                    // If no username has been entered
                     if (username.isBlank()) {
                         Toast.makeText(context, "Enter username", Toast.LENGTH_SHORT).show()
                         return@launch
                     }
-
+                    // If no password has been entered
                     if (password.isBlank()) {
                         Toast.makeText(context, "Enter password", Toast.LENGTH_SHORT).show()
                         return@launch
                     }
-
+                    // Else proceed to validate password strength
                     if (!loginProfileViewModel.isPasswordValid(password)) {
                         Toast.makeText(
                             context,
@@ -268,20 +293,20 @@ fun LoginProfileContent(
                         ).show()
                         return@launch
                     }
-
+                    // If no image has been selected
                     if (imageUri == null) {
                         Toast.makeText(context, "Pick an image", Toast.LENGTH_SHORT).show()
                         return@launch
-                    }
-
-                    // Only now call Firebase
+                    }                   
+                    // Check if username is available
                     val available = loginProfileViewModel.isUsernameAvailable()
                     if (!available) {
                         Toast.makeText(context, "Username already exists , please try another one", Toast.LENGTH_LONG)
                             .show()
                         return@launch
                     }
-                    Log.d("LoginScreen", "Sign On button CLICKED!")
+                    Log.d("LoginScreen", "Sign Up button CLICKED!")
+                    // If all checks out proceed with sign up
                     onSignUpButtonClicked()
                 }
             },
@@ -296,7 +321,9 @@ fun LoginProfileContent(
 
 
 
+// === Previews ===
 
+// Login Profile Screen Preview
 @Preview
 @Composable
 fun LoginProfileScreenPreview() {
@@ -307,6 +334,7 @@ fun LoginProfileScreenPreview() {
     }
 }
 
+// Login Profile Content Preview
 @Preview
 @Composable
 fun LoginProfileContentPreview() {
