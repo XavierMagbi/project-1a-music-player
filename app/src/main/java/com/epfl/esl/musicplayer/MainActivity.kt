@@ -36,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
@@ -44,6 +45,7 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -332,7 +334,10 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
                                         }
                                     }
                                     // Navigation bar
-                                    NavigationBar {
+                                    NavigationBar (
+//                                            containerColor = MaterialTheme.colorScheme.primary, // Red background
+//                                            contentColor = MaterialTheme.colorScheme.secondary  // Black text
+                                    ) {
                                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                                         val currentRoute = navBackStackEntry?.destination?.route
                                         // Home button
@@ -422,7 +427,6 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
                                         username = loginInfo.username
                                         imageUri = loginInfo.imageUri
                                         userKey = loginInfo.userKey
-
                                         if (imageUri == null || username == "") { // Picking an image is required to proceed
                                             Toast.makeText(
                                                 context, "Pick an image and a username!",

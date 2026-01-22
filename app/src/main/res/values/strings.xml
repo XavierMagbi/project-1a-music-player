@@ -27,4 +27,5 @@
     <string name="my_playlist_text">Music</string>
     <string name="playlists_content_description">playlists nav icon\n</string>
     <string name="menu_icon_content_description">Drawable menu</string>
+    <string name="app_logo_description">App logo</string>
 </resources>

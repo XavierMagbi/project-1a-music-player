@@ -197,7 +197,16 @@ fun LoginProfileContent(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = stringResource(R.string.app_logo_description),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .padding(bottom = 8.dp)
+        )
         // If no image selected, show default image
         if (imageUri == null) {
             Image(

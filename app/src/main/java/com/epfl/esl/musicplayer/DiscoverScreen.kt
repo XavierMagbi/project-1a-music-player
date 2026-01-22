@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
 
 /*
     Discover Screen Composable
@@ -81,13 +82,17 @@ fun DiscoverScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        LazyColumn() {
+        LazyColumn(
+            modifier = Modifier
+                .padding(top = 16.dp)
+        ) {
             // Discover text
             item {
                 Text(
                     text = stringResource(id = R.string.discover_text),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontSize = 20.sp
                 )
             }
             // Search bar

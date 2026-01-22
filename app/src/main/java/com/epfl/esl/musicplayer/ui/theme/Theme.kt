@@ -15,6 +15,17 @@ private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
     tertiary = Pink80
+
+    // Test for different color palet
+    // primary = DarkRed,           
+    // secondary = Black,       
+    // tertiary = DarkGrey,
+    // background = Black,      
+    // surface = DarkGrey,
+    // onPrimary = White,
+    // onSecondary = White,       
+    // onBackground = White,      
+    // onSurface = White  
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -31,6 +42,17 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Color(0xFF1C1B1F),
     onSurface = Color(0xFF1C1B1F),
     */
+
+    // Test for different color palet
+    // primary = DarkRed,           
+    // secondary = Black,       
+    // tertiary = DarkGrey,
+    // background = Black,      
+    // surface = DarkGrey,
+    // onPrimary = White,
+    // onSecondary = White,       
+    // onBackground = White,      
+    // onSurface = White          
 )
 
 @Composable

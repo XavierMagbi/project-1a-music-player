@@ -27,8 +27,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CheckboxDefaults.colors
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
+import com.epfl.esl.musicplayer.ui.theme.DarkGrey
+import com.epfl.esl.musicplayer.ui.theme.DarkRed
+import com.epfl.esl.musicplayer.ui.theme.White
 
 /*
     Home Screen Composable
@@ -62,11 +68,16 @@ fun HomeScreen(
         var searchQuery by remember { mutableStateOf("") }
 
         LazyColumn(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(top = 16.dp)
         ) {
             // Welcome text
             item{
-                Text("Welcome to WristWave!")
+                Text(
+                    text = "Welcome to WristWave!",
+                    fontSize = 20.sp
+                )
             }
             // Search bar
             item {
@@ -87,7 +98,16 @@ fun HomeScreen(
                             contentDescription = "Search friends"
                         )
                     },
-                    singleLine = true
+                    singleLine = true,
+                    // Testing for other
+//                    colors = TextFieldDefaults.colors(
+//                        focusedTextColor = White,
+//                        unfocusedTextColor = White,
+//                        focusedLabelColor = DarkRed,
+//                        unfocusedLabelColor = White,
+//                        focusedContainerColor = DarkGrey,
+//                        unfocusedContainerColor = DarkGrey
+//                    )
                 )
             }
             // List of found users
