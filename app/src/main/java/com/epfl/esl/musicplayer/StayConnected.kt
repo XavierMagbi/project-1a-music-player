@@ -10,6 +10,14 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
+/*
+    StayConnected module to manage user connection state using ROOM database.
+    It allows to save, fetch and delete the connected user information locally.
+
+    Only one user can be saved at a time. The saved user can sign off, which deletes
+    the user information from the local database.
+*/
+
 // ROOM database (select tables + DAO)
 @Database(entities = [User::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
@@ -21,7 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
 data class User(
     @PrimaryKey val id: Int = 0,   // Unique ID (always will be 0 as we only have one saved user at a time)
     val username: String,          // Username
-    val userKey: String           // Firebase profile ID
+    val userKey: String            // Firebase profile ID
 )
 
 // ROOM DAO (Data Access Object) (Messenger for our ROOM database)
@@ -36,7 +44,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = 0")
     suspend fun getUser(): User?
 
-    // Deleter user
+    // Delete user
     @Query("DELETE FROM users WHERE id = 0")
     suspend fun deleteUser()
 }
@@ -45,6 +53,7 @@ interface UserDao {
 object DatabaseProvider {
     private var db: AppDatabase? = null
 
+    // Get database instance if exists, else create it
     fun getDatabase(context: Context): AppDatabase {
         if (db == null) {
             db = Room.databaseBuilder(

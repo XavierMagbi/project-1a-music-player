@@ -1,6 +1,5 @@
 package com.epfl.esl.musicplayer
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -104,7 +102,7 @@ fun PlaylistScreen(
                                 )
                             } else {
                                 Image(
-                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    painter = painterResource(id = R.drawable.default_sound_pic),
                                     contentDescription = "Default playlist picture",
                                     modifier = Modifier
                                         .width(40.dp)
@@ -158,7 +156,7 @@ fun PlaylistScreen(
                                 )
                             } else {
                                 Image(
-                                    painter = painterResource(id = R.drawable.defaultplaylist),
+                                    painter = painterResource(id = R.drawable.default_sound_pic),
                                     contentDescription = "Default playlist picture",
                                     modifier = Modifier
                                         .width(40.dp)

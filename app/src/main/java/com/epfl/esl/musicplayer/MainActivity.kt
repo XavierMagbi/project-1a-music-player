@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -258,7 +257,7 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
                                     }
                                     BitmapPainter(bitmap)
                                 } else {
-                                    painterResource(id = R.drawable.defaultplaylist)
+                                    painterResource(id = R.drawable.default_sound_pic)
                                 }
                                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                                 Column {
@@ -587,6 +586,23 @@ class MainActivity : ComponentActivity(),MessageClient.OnMessageReceivedListener
 
 
 }
+
+// ==== Data Classes ====
+
+// Data class to hold user profile information to be displayed in HomeScreen
+data class UserProfile(
+    val username: String,
+    val image: Bitmap? = null
+)
+
+// Data class to hold music metadata to be displayed in DiscoverScreen and used for playback
+data class musicMetadata (
+    val title: String? = "",
+    val image: ByteArray? = null,
+    val link: String? = "",
+    val linkGS: String? = "",
+    val datapath: String=""
+)
 
 
 

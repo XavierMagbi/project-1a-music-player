@@ -8,7 +8,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.auth.FirebaseAuth
 
 /*
     Home Screen ViewModel
@@ -21,18 +20,10 @@ import com.google.firebase.auth.FirebaseAuth
     Firebase Storage - to fetch profile pictures
  */
 
-// Data class to hold user profile information to be displayed in HomeScreen
-data class UserProfile(
-    val username: String,
-    val image: Bitmap? = null
-)
-
 // ViewModel for HomeScreen
 class HomeScreenViewModel:ViewModel() {
-    // Firebase Realtime Database and Storage references
+    // Firebase Realtime Database references
     private val dataBase = FirebaseDatabase.getInstance()
-    private val storage = FirebaseStorage.getInstance()
-
     // References to database node
     private val usersRef = dataBase.getReference("Profiles")
 
