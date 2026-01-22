@@ -10,15 +10,11 @@ import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.os.PowerManager
-import android.view.WindowManager
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.MarqueeAnimationMode.Companion.Immediately
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +30,9 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,23 +63,25 @@ import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.cancel
 
 
 class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
+    // Data Variables
     private var bitmap by mutableStateOf<Bitmap?>(null)
-    private var songTitle by mutableStateOf("Hello World!")
+    private var songTitle by mutableStateOf("No Music for now...")
     private var lastSongFingerprint by mutableStateOf<String?>(null)
     private var isPlaying by mutableStateOf(false)
-    private var currentPosition by mutableStateOf(0)
-    private var duration by mutableStateOf(0)
+    private var currentPosition by mutableIntStateOf(0)
+    private var duration by mutableIntStateOf(0)
+    private var countedPositionMs by mutableIntStateOf(0)
+
+    // Timer View model
+
+
+    // Sensor variables for wrist movement detection
     private lateinit var sensorManager: SensorManager // Variables to use Gyroscope for wrist shaking
     private var gyro: Sensor? = null
-    private var accel : Sensor?=null
     private lateinit var wristFlickGyroDetector: WristFlickGyroDetector
-    // A scope tied to the Activity
-    private val screenScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var turnOffJob: Job? = null
 
     private lateinit var wearPlayViewModel : WearPlayViewModel
 
@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
         wristFlickGyroDetector = WristFlickGyroDetector(
             onFlick = { dir ->
-                Log.d("Main Activity","Movement Detected" + dir.toString())
+                Log.d("Main Activity", "Movement Detected$dir")
                 if (dir == WristFlickGyroDetector.Direction.LEFT || dir == WristFlickGyroDetector.Direction.RIGHT) {
                     wearPlayViewModel.onRightArrowClick()
                 }
@@ -113,17 +113,27 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         setContent {
            Project1amusicplayerTheme {
                 wearPlayViewModel = viewModel()
+
+               LaunchedEffect(isPlaying, songTitle) {
+                   // Reset when a new song is received (songTitle changes)
+                   countedPositionMs = 0
+
+                   while (true) {
+                       if (isPlaying) {
+                           countedPositionMs += 1000
+                           if (countedPositionMs > duration) countedPositionMs = duration
+                       }
+                       delay(1000L)
+                   }
+               }
+
                 HomeScreen(
                     songTitle,
                     bitmap,
                     isPlaying,
-                    currentPosition,
+                    countedPositionMs,
                     duration,
                     // These click handlers are placeholders for now
-                    onPreviousClick = { },
-                    onPlayPauseClick = { },
-                    onNextClick = { },
-                    onSeek = { },
                     flipButton = {isPlaying=!isPlaying},
                     wearPlayViewModel = wearPlayViewModel
 
@@ -176,7 +186,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 } else if (newFingerprint != lastSongFingerprint) {
                     // New song -> wake screen + keep awake briefly
                     lastSongFingerprint = newFingerprint
-                   // wakeThenPulseScreen(pulseMs = 1_000L)
+                    //wakeThenPulseScreen(pulseMs = 1_000L)
                     Log.d("WearScreen", "New song detected -> wake: $newFingerprint")
                 }
 
@@ -202,37 +212,17 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     // UNUSED FOR NOW CHECK WHEN IMPLEMENTED
-    private fun wakeThenPulseScreen(
-        pulseMs: Long = 4_000L,
-        wakeMs: Long = 800L
-    ) {
-        // 1) Wake the display briefly
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        val wl = pm.newWakeLock(
-            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "MusicPlayerWear:SongChangeWake"
-        )
-        wl.acquire(wakeMs)
-        wl.release()
 
-        // 2) Keep screen on for pulseMs, then allow it to sleep normally
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        Log.d("WearScreen", "KEEP_SCREEN_ON enabled (pulse=$pulseMs ms)")
-
-        turnOffJob?.cancel()
-        turnOffJob = screenScope.launch {
-            delay(pulseMs)
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            Log.d("WearScreen", "KEEP_SCREEN_ON cleared (system may turn screen off)")
-        }
-
-    }
 
     // Function to check when there is a new song or not
     private fun makeSongFingerprint(title: String, durationMs: Int): String {
         return "$title|$durationMs"
     }
+
+
 }
+
+
 
 
 @Composable
@@ -240,15 +230,12 @@ fun HomeScreen(
     songTitle: String,
     bitmap: Bitmap?,
     isPlaying: Boolean?,
-    currentPosition :Int,
+    countedPositionMs:Int,
     duration:Int,
-    onPreviousClick: () -> Unit,
-    onPlayPauseClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onSeek: (Float) -> Unit,
+    modifier: Modifier = Modifier,
     wearPlayViewModel : WearPlayViewModel=viewModel(),
-    flipButton:()-> Unit,
-    modifier: Modifier = Modifier) {
+    flipButton:()-> Unit
+    ) {
 
     Box(
         modifier = modifier
@@ -263,7 +250,7 @@ fun HomeScreen(
         ) {
             val context = LocalContext.current
             val displayBitmap = bitmap?.asImageBitmap()
-                ?: ImageBitmap.imageResource(context.resources, R.drawable.ic_logo)
+                ?: ImageBitmap.imageResource(context.resources, R.drawable.imageplaylist)
 
             // 1. Album Art Image
             Image(
@@ -293,7 +280,7 @@ fun HomeScreen(
 
 
             val progress = if (duration > 0) {
-                currentPosition.toFloat() / duration.toFloat()
+                countedPositionMs.toFloat() / duration.toFloat()
             } else {
                 0f
             }
@@ -316,7 +303,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = formatTime2(currentPosition),
+                    text = formatTime2(countedPositionMs),
                     style = MaterialTheme.typography.labelSmall
                 )
                 Text(
@@ -374,11 +361,10 @@ fun HomeScreen(
 fun formatTime2(milliseconds: Int): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds.toLong())
     val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds.toLong()) % 60
-    return String.format("%02d:%02d", minutes, seconds)
+    return String.format(format = buildString {
+        append("%02d:%02d")
+    }, minutes, seconds)
 }
-
-
-
 
 
 
@@ -391,13 +377,9 @@ fun HomeScreenPreview() {
     HomeScreen(
         songTitle = "A Long Song Title",
         bitmap = null,
-        isPlaying = false,
-        currentPosition = 60000, // 1 minute
+        isPlaying = false,  // 1 minute
+        countedPositionMs = 60000,
         duration = 240000, // 4 minutes
-        onPreviousClick = {},
-        onPlayPauseClick = {},
-        onNextClick = {},
-        onSeek = {},
         flipButton = {}
 
 

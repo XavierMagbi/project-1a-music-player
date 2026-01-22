@@ -1,26 +1,22 @@
 package com.epfl.esl.musicplayer.presentation
 
-import android.annotation.SuppressLint
+
 import android.app.Application
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.tasks.Tasks
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.application
 import com.google.android.gms.wearable.MessageClient
-import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
+
 
 class WearPlayViewModel(app: Application) : AndroidViewModel(app) {
+
+
 
 
     val context = getApplication<Application>().applicationContext
