@@ -25,10 +25,13 @@ The goal is to provide a **smooth, responsive, and intuitive music experience** 
 │   └── proguard-rules.pro
 │
 ├── wear/
-│   ├── src/main/
-│   │   ├── java/com/epfl/esl/musicplayer/   # Kotlin + Compose UI, sensors, ViewModel
-│   │   ├── res/                             # Resources (icons, themes, etc.)
-│   │   └── AndroidManifest.xml
+│   ├── src/
+│   │   └── main/
+│   │       ├── java/
+│   │       │   └── com/epfl/esl/musicplayer/   (Kotlin + Compose UI, sensors, ViewModel)
+│   │       ├── res/                           (Resources: icons, themes, etc.)
+│   │       └── AndroidManifest.xml
+│   │
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── lint.xml
@@ -43,7 +46,6 @@ The goal is to provide a **smooth, responsive, and intuitive music experience** 
 ├── gradle.properties
 ├── gradlew
 └── gradlew.bat
-
 
 ---
 
