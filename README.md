@@ -2,7 +2,7 @@
 
 A **Wear OS music companion app** built in **Kotlin using Jetpack Compose**, allowing users to control music playback directly from their smartwatch using **touch interactions and wrist gestures**.
 
----
+------------------------
 
 ## 📱 Project Overview
 
@@ -14,9 +14,11 @@ This project is a **multi-module Android application** composed of:
 
 The goal is to provide a **smooth, responsive, and intuitive music experience** on a smartwatch.
 
----
+-------------------------
 
 ## 📂 Project Structure
+
+```text
 .
 ├── app/
 │   ├── src/
@@ -47,7 +49,11 @@ The goal is to provide a **smooth, responsive, and intuitive music experience** 
 ├── gradlew
 └── gradlew.bat
 
----
+
+
+```
+
+---------------------------------
 
 ## 🚀 Features
 
@@ -72,7 +78,7 @@ Uses:
 - `/static_songInfo` → metadata  
 - `/dynamic_songInfo` → playback position  
 
----
+--------------------------------------
 
 ### ⌚ Smartwatch UI (Jetpack Compose)
 - Fully built with **Jetpack Compose**
@@ -81,13 +87,13 @@ Uses:
 - Progress bar  
 - Time indicator (MM:SS)  
 
----
+---------------------------------------
 
 ### ⏱ Local Time Tracking
 - The watch does **not rely on constant updates** from the phone  
 - Receives position occasionally and updates locally every second  
 
----
+--------------------------------------
 
 ### 🖐 Gesture Controls (Gyroscope-based)
 
@@ -104,7 +110,7 @@ Control music using wrist movements:
 - Signal averaging
 - Cooldown to avoid multiple triggers
 
----
+--------------------------------------
 
 ### 🔋 Smart Screen Behavior
 - Screen stays **ON while music is playing**
@@ -116,7 +122,7 @@ Uses:
 - `FLAG_KEEP_SCREEN_ON`
 - Kotlin coroutines (`delay`, `launch`)
 
----
+-------------------------------------
 
 ## 🏗 Architecture
 
@@ -129,7 +135,7 @@ Uses:
 | Sensors | Detect gestures |
 | Data Layer | Sync phone ↔ watch |
 
----
+-----------------------------------
 
 ### Key Components
 
@@ -146,7 +152,7 @@ Uses:
 - `WristFlickGyroDetector`
   - Converts raw gyroscope data → gestures  
 
----
+-----------------------------------
 
 ## 🔄 Communication Model
 
@@ -163,7 +169,7 @@ Uses:
   - Play/Pause  
   - Next / Previous  
 
----
+----------------------------------
 
 ## 🧠 Technologies Used
 
@@ -174,7 +180,7 @@ Uses:
 - SensorManager (Gyroscope)  
 - Google Wearable Data Layer  
 
----
+------------------------------
 
 ## ⚠️ Limitations
 
@@ -183,7 +189,7 @@ Uses:
 - No offline playback on watch  
 - Limited ambient mode handling  
 
----
+-----------------------------
 
 ## 💡 Future Improvements
 
@@ -192,7 +198,7 @@ Uses:
 - 🤖 Machine learning gesture recognition  
 - 🎵 Streaming service integration  
 
----
+-----------------------------
 
 ## 👨‍💻 Author
 
